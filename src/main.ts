@@ -13,6 +13,7 @@ import { login } from "./routes/login";
 import { setup } from "./routes/setup";
 import { account } from "./routes/account";
 import { admin } from "./routes/admin";
+import { register } from "./routes/register";
 
 const app = new Hono<AppEnv>();
 
@@ -66,6 +67,7 @@ app.get("/", (c) => c.redirect(c.get("user") ? "/account" : "/login"));
 
 app.route("/", oidc);
 app.route("/", login);
+app.route("/", register);
 app.route("/", setup);
 app.route("/", account);
 app.route("/", admin);

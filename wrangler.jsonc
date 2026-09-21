@@ -43,7 +43,8 @@
 		// Public origin of this server. It is the OIDC issuer and the passkey
 		// relying party, so it must never change once passkeys are registered.
 		"ISSUER": "https://auth.doughmination.gay",
-		"SITE_NAME": "Doughmination SSO"
+		"SITE_NAME": "Doughmination SSO",
+		"REGISTRATION": "open"
 	}
 	// Secrets (wrangler secret put <NAME>):
 	//   KEY_ENCRYPTION_KEY  encrypts signing keys + TOTP secrets at rest

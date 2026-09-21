@@ -12,6 +12,7 @@ export interface Env {
   SITE_NAME: string;
   KEY_ENCRYPTION_KEY: string;
   SETUP_TOKEN?: string;
+  REGISTRATION?: string;
 }
 
 export interface SessionInfo {

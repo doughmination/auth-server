@@ -95,6 +95,11 @@ function loginPage(c: AppContext, opts: LoginPageOptions) {
           Sign in
         </button>
       </form>
+      {!opts.reauth && c.env.REGISTRATION === "open" && (
+        <p class="muted small">
+          New here? <a href={`/register?return=${encodeURIComponent(opts.returnTo)}`}>Create an account</a>
+        </p>
+      )}
     </div>,
   );
 }
@@ -178,6 +183,7 @@ function totpPage(c: AppContext, error?: string) {
           Continue
         </button>
       </form>
+
       <p class="muted small">
         <a class="btn wide" href="/login">Start over</a>
       </p>

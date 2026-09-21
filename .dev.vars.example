@@ -13,3 +13,6 @@ KEY_ENCRYPTION_KEY=
 # user exists, so this can be deleted afterwards.
 # Generate with: openssl rand -hex 24
 SETUP_TOKEN=
+
+# "open" enables /register. Overrides the value in wrangler.jsonc.
+# REGISTRATION=closed

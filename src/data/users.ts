@@ -71,6 +71,7 @@ export interface NewUser {
   name: string | null;
   email: string | null;
   emailVerified: boolean;
+  passwordHash?: string | null
 }
 
 export type CreateResult = { ok: true; id: string } | { ok: false; error: string };
@@ -80,10 +81,10 @@ export async function createUser(env: Env, input: NewUser): Promise<CreateResult
   const ts = now();
   try {
     await env.DB.prepare(
-      `INSERT INTO users (id, username, name, email, email_verified, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (id, username, name, email, email_verified, password_hash, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-      .bind(id, input.username, input.name, input.email, input.emailVerified ? 1 : 0, ts, ts)
+      .bind(id, input.username, input.name, input.email, input.emailVerified ? 1 : 0, input.passwordHash ?? null, ts, ts)
       .run();
     return { ok: true, id };
   } catch (err) {

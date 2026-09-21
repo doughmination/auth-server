@@ -40,6 +40,7 @@ const MESSAGES: Record<string, string> = {
   "link-revoked": "Sign-in link revoked.",
   "name-reserved": "Name reserved.",
   "name-released": "Name released.",
+  "welcome": "Welcome! Add a passkey below too, so you have a second way to sign in.",
 };
 
 export function Flash(props: { code?: string | undefined }) {
