@@ -16,3 +16,7 @@ SETUP_TOKEN=
 
 # "open" enables /register. Overrides the value in wrangler.jsonc.
 # REGISTRATION=closed
+
+# Resend API key. Leave empty locally and emails are printed to the terminal
+# instead of being sent.
+RESEND_API_KEY=

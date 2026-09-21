@@ -13,6 +13,8 @@ export interface Env {
   KEY_ENCRYPTION_KEY: string;
   SETUP_TOKEN?: string;
   REGISTRATION?: string;
+  RESEND_API_KEY?: string;
+  MAIL_FROM: string;
 }
 
 export interface SessionInfo {
@@ -54,6 +56,8 @@ export const TTL = {
   accessToken: 60 * 60,
   idToken: 60 * 60,
   refreshToken: 60 * 60 * 24 * 30,
+  /** Email verification links. */
+  emailVerification: 60 * 60 * 24,
   /** A used refresh token is honoured again for this long (racing app instances). */
   refreshReuseGrace: 60,
   /** Changing sign-in methods or using /admin needs a sign-in this recent. */

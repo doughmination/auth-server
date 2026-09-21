@@ -44,9 +44,12 @@
 		// relying party, so it must never change once passkeys are registered.
 		"ISSUER": "https://auth.doughmination.gay",
 		"SITE_NAME": "Doughmination SSO",
-		"REGISTRATION": "open"
+		"REGISTRATION": "open",
+		// Sender for verification emails. The domain must be verified in Resend.
+		"MAIL_FROM": "Doughmination SSO <no-reply@doughmination.gay>"
 	}
 	// Secrets (wrangler secret put <NAME>):
 	//   KEY_ENCRYPTION_KEY  encrypts signing keys + TOTP secrets at rest
 	//   SETUP_TOKEN         unlocks /setup while there are no users yet
+	//   RESEND_API_KEY      sends verification emails (optional locally: they're logged instead)
 }

@@ -14,6 +14,7 @@ type Icon = (props: Record<string, unknown>) => any;
 
 export declare const AppWindows: Icon;
 export declare const ArrowLeft: Icon;
+export declare const Check: Icon;
 export declare const Key: Icon;
 export declare const Link: Icon;
 export declare const Login: Icon;

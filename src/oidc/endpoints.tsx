@@ -204,6 +204,37 @@ async function authorize(c: AppContext) {
     );
   }
 
+  // Apps may trust the email claim, so every account needs a verified address.
+  if (!user.email_verified) {
+    if (prompts.includes("none")) return fail("interaction_required", "The user hasn't verified their email address.");
+    return render(
+      c,
+      { title: "Verify your email", narrow: true, status: 403 },
+      <div class="card">
+        <h1>Verify your email first</h1>
+        <p class="muted">
+          {user.email ? (
+            <>
+              We sent a link to <strong>{user.email}</strong>. Open it, then come back here.
+            </>
+          ) : (
+            <>Add an email address on your account page and verify it to use {client.name}.</>
+          )}
+        </p>
+        <p>
+          <a class="btn primary wide" href={`/authorize?${new URLSearchParams(params)}`}>
+            I've verified it, continue
+          </a>
+        </p>
+        <p>
+          <a class="btn wide" href="/account">
+            Your account (resend the link)
+          </a>
+        </p>
+      </div>,
+    );
+  }
+
   const code = randomToken(32);
   await c.env.DB.prepare(
     `INSERT INTO auth_codes (code_hash, client_id, user_id, redirect_uri, scope, nonce, code_challenge, auth_time, amr, expires_at)

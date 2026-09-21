@@ -35,6 +35,7 @@ import {
   updateProfile,
   type UserRow,
 } from "../data/users";
+import { sendVerificationEmail } from "../data/verifications";
 import { render } from "../views/layout";
 import { Csrf, ErrorNote, Field, Flash, Section, date, describeAgent, relative } from "../views/ui";
 
@@ -106,6 +107,13 @@ async function accountPage(c: AppContext, opts: { error?: string; status?: 400 }
             </button>
           </div>
         </form>
+        {user.email && !user.email_verified && (
+          <form method="post" action="/account/email/verify" class="inline-edit">
+            <Csrf token={csrf} />
+            <small class="muted">{user.email} isn't verified yet.</small>
+            <button type="submit" class="small">Resend verification email</button>
+          </form>
+        )}
       </Section>
 
       <Section title="Passkeys" description="The quickest and safest way to sign in: your device unlocks with a fingerprint, face or PIN.">
@@ -250,9 +258,21 @@ account.post("/account/profile", async (c) => {
   const problem = emailProblem(update.email) ?? pictureProblem(update.picture);
   if (problem) return accountPage(c, { error: problem, status: 400 });
 
-  await updateProfile(c.env, await me(c), update);
+  const user = await me(c);
+  await updateProfile(c.env, user, update);
   await audit(c, "account.profile");
+  if (update.email && update.email !== user.email) {
+    const sent = await sendVerificationEmail(c.env, user.id, update.email);
+    return c.redirect(`/account?m=${sent === "sent" ? "verify-sent" : "verify-failed"}`);
+  }
   return c.redirect("/account?m=profile-saved");
+});
+
+account.post("/account/email/verify", async (c) => {
+  const user = await me(c);
+  if (!user.email || user.email_verified) return c.redirect("/account");
+  const sent = await sendVerificationEmail(c.env, user.id, user.email);
+  return c.redirect(`/account?m=${sent === "sent" ? "verify-sent" : "verify-failed"}`);
 });
 
 // --- passkeys --------------------------------------------------------------------

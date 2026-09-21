@@ -11,10 +11,11 @@ import { audit } from "../lib/audit";
 import { clientIp, form, safeReturn } from "../lib/http";
 import { PASSWORD_MAX, PASSWORD_MIN, hashPassword, passwordProblem } from "../lib/password";
 import { attempt } from "../lib/ratelimit";
-import { cleanText, normaliseUsername, usernameProblem } from "../lib/validate";
+import { cleanText, emailProblem, normaliseUsername, usernameProblem } from "../lib/validate";
 import { isReserved } from "../data/reserved";
 import { startSession } from "../data/sessions";
 import { countUsers, createUser } from "../data/users";
+import { sendVerificationEmail } from "../data/verifications";
 import { render } from "../views/layout";
 import { ErrorNote, Field } from "../views/ui";
 
@@ -49,6 +50,7 @@ interface RegisterValues {
     returnTo: string;
     username?: string;
     name?: string;
+    email?: string;
 }
 
 function registerPage(c: AppContext, values: RegisterValues, error?: string) {
@@ -72,6 +74,16 @@ function registerPage(c: AppContext, values: RegisterValues, error?: string) {
                     hint="Lowercase letters, digits, dots, dashes or underscores. You can't change it later."
                 />
                 <Field label="Display name" name="name" value={values.name} autocomplete="name" maxlength={100} />
+                <Field
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={values.email}
+                    required
+                    autocomplete="email"
+                    maxlength={254}
+                    hint="We'll send a link to verify it."
+                />
                 <Field
                     label="Password"
                     name="password"
@@ -116,26 +128,31 @@ register.post("/register", async (c) => {
     const returnTo = safeReturn(body.return);
     const username = normaliseUsername(body.username);
     const password = (body.password ?? "").slice(0, PASSWORD_MAX);
+    const email = cleanText(body.email, 254);
     // Never echo the password back into the form.
-    const values = { returnTo, username, name: body.name ?? "" };
+    const values = { returnTo, username, name: body.name ?? "", email: email ?? "" };
 
     const problem =
         usernameProblem(username) ??
         ((await isReserved(c.env, username)) ? UNAVAILABLE : null) ??
+        (email === null ? "Enter your email address." : emailProblem(email)) ??
         passwordProblem(password, username) ??
         (password !== body.confirm ? "The passwords don't match." : null);
-    if (problem) return registerPage(c, values, problem);
+    if (problem || email === null) return registerPage(c, values, problem ?? "Enter your email address.");
 
     const result = await createUser(c.env, {
         username,
         name: cleanText(body.name, 100),
-        email: null,
+        email,
         emailVerified: false,
         passwordHash: await hashPassword(password),
     });
     if (!result.ok) return registerPage(c, values, UNAVAILABLE);
 
+    const sent = await sendVerificationEmail(c.env, result.id, email);
     await startSession(c, result.id, ["pwd"]);
     await audit(c, "register", { actor: result.id, target: username });
-    return c.redirect(returnTo === "/account" ? "/account?m=welcome" : returnTo);
+    // From an app: back to /authorize, which asks them to verify before continuing.
+    if (returnTo !== "/account") return c.redirect(returnTo);
+    return c.redirect(`/account?m=${sent === "sent" ? "welcome-verify" : "verify-failed"}`);
 });

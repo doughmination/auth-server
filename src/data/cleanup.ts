@@ -17,6 +17,7 @@ export async function sweepExpired(env: Env): Promise<void> {
     env.DB.prepare("DELETE FROM pending_logins WHERE expires_at <= ?").bind(ts),
     env.DB.prepare("DELETE FROM webauthn_challenges WHERE expires_at <= ?").bind(ts),
     env.DB.prepare("DELETE FROM login_links WHERE expires_at <= ?").bind(ts),
+    env.DB.prepare("DELETE FROM email_verifications WHERE expires_at <= ?").bind(ts),
     env.DB.prepare("DELETE FROM auth_codes WHERE expires_at <= ?").bind(ts),
     // Revoked or used refresh tokens are kept until they expire anyway, so reuse
     // of an old token can still be recognised and its family shut down.
