@@ -38,6 +38,8 @@ const MESSAGES: Record<string, string> = {
   "user-enabled": "Account enabled.",
   "user-signed-out": "Signed out of every session and application.",
   "link-revoked": "Sign-in link revoked.",
+  "name-reserved": "Name reserved.",
+  "name-released": "Name released.",
 };
 
 export function Flash(props: { code?: string | undefined }) {

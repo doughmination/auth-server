@@ -53,6 +53,7 @@ import {
 } from "../data/users";
 import { render } from "../views/layout";
 import { Csrf, ErrorNote, Field, Flash, Section, date, relative } from "../views/ui";
+import { builtinReserved, listReserved, reserveUsername, unreserveUsername } from "../data/reserved";
 
 export const admin = new Hono<AppEnv>();
 
@@ -67,6 +68,7 @@ const TABS = [
   ["/admin/clients", "Applications"],
   ["/admin/keys", "Signing keys"],
   ["/admin/audit", "Audit log"],
+  ["/admin/reserved", "Reserved Names"],
 ] as const;
 
 function adminPage(
@@ -608,6 +610,77 @@ admin.post("/admin/groups/:name/delete", async (c) => {
   await deleteGroup(c.env, name);
   await audit(c, "admin.group_deleted", { target: name });
   return c.redirect("/admin/groups?m=group-deleted");
+});
+
+// --- reserved usernames ------------------------------------------------------------
+
+async function reservedPage(c: AppContext, error?: string) {
+  const reserved = await listReserved(c.env);
+  const token = csrf(c);
+  return adminPage(
+    c,
+    { title: "Reserved names", tab: "/admin/reserved", error, status: error ? 400 : undefined },
+    <>
+      <Section title="Reserved names" description="Nobody can sign up with these. Dots, dashes and underscores are
+  ignored when matching, so reserving noreply also blocks no-reply and no.reply. Admins can still create accounts
+  with them.">
+        <ul class="rows">
+          {reserved.map((r) => (
+            <li>
+              <div class="grow">
+                <strong>{r.username}</strong> {r.note && <small class="muted">{r.note}</small>}
+              </div>
+              <form method="post" action={`/admin/reserved/${encodeURIComponent(r.username)}/delete`}
+                data-confirm={`Release "${r.username}"? Anyone can then sign up with it.`}>
+                <Csrf token={token} />
+                <button type="submit" class="danger small">Release</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      </Section>
+      <Section title="Reserve a name">
+        <form method="post" action="/admin/reserved" class="stack">
+          <Csrf token={token} />
+          <div class="grid2">
+            <Field label="Username" name="username" required maxlength={32} autocomplete="off" />
+            <Field label="Note" name="note" maxlength={200} autocomplete="off" hint="Why, or who it's held for."
+            />
+          </div>
+          <div>
+            <button type="submit" class="primary">
+              <Save class="icon" aria-hidden="true" />
+              Reserve
+            </button>
+          </div>
+        </form>
+      </Section>
+      <Section title="Always reserved" description="Built into the code (src/data/reserved.ts).">
+        <p class="muted small">{builtinReserved().join(", ")}</p>
+      </Section>
+    </>,
+  );
+}
+
+admin.get("/admin/reserved", (c) => reservedPage(c));
+
+admin.post("/admin/reserved", async (c) => {
+  const body = await form(c);
+  const username = normaliseUsername(body.username);
+  const problem = usernameProblem(username);
+  if (problem) return reservedPage(c, problem);
+  if (!(await reserveUsername(c.env, username, cleanText(body.note, 200) ?? ""))) {
+    return reservedPage(c, "That name is already reserved.");
+  }
+  await audit(c, "admin.username_reserved", { target: username });
+  return c.redirect("/admin/reserved?m=name-reserved");
+});
+
+admin.post("/admin/reserved/:name/delete", async (c) => {
+  const name = c.req.param("name");
+  await unreserveUsername(c.env, name);
+  await audit(c, "admin.username_released", { target: name });
+  return c.redirect("/admin/reserved?m=name-released");
 });
 
 // --- clients -----------------------------------------------------------------------
