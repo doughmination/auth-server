@@ -20,3 +20,6 @@ SETUP_TOKEN=
 # Resend API key. Leave empty locally and emails are printed to the terminal
 # instead of being sent.
 RESEND_API_KEY=
+
+# Contact address shown on /privacy and /terms for data and account requests.
+# CONTACT_EMAIL=

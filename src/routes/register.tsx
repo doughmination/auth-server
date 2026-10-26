@@ -95,6 +95,10 @@ function registerPage(c: AppContext, values: RegisterValues, error?: string) {
                 />
                 <Field label="Confirm password" name="confirm" type="password" required autocomplete="new-password"
                     maxlength={PASSWORD_MAX} />
+                <p class="muted small">
+                    By creating an account you agree to the <a href="/terms">terms</a> and{" "}
+                    <a href="/privacy">privacy policy</a>.
+                </p>
                 <button type="submit" class="primary wide">
                     <UserPlus class="icon" aria-hidden="true" />
                     Create account
@@ -150,7 +154,7 @@ register.post("/register", async (c) => {
     if (!result.ok) return registerPage(c, values, UNAVAILABLE);
 
     const sent = await sendVerificationEmail(c.env, result.id, email);
-    await startSession(c, result.id, ["pwd"]);
+    await startSession(c, result.id, ["pwd"], { alert: false });
     await audit(c, "register", { actor: result.id, target: username });
     // From an app: back to /authorize, which asks them to verify before continuing.
     if (returnTo !== "/account") return c.redirect(returnTo);

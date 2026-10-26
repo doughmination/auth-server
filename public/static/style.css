@@ -693,6 +693,32 @@ table.compact td {
   letter-spacing: 0.05em;
 }
 
+/* --- legal pages + footer ------------------------------------------------------- */
+
+.legal {
+  max-width: 68ch;
+}
+
+.legal h2 {
+  margin-top: 2rem;
+}
+
+.legal li {
+  margin: 0.35rem 0;
+}
+
+.site-footer {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 0 16px 2rem;
+  font-size: 0.8rem;
+}
+
+.site-footer a {
+  color: var(--muted);
+}
+
 ::selection {
   background: var(--accent);
   color: #fff;

@@ -46,7 +46,8 @@
 		"SITE_NAME": "Doughmination SSO",
 		"REGISTRATION": "open",
 		// Sender for verification emails. The domain must be verified in Resend.
-		"MAIL_FROM": "Doughmination SSO <no-reply@doughmination.gay>"
+		"MAIL_FROM": "Doughmination SSO <no-reply@doughmination.gay>",
+		"CONTACT_EMAIL": "admin@doughmination.gay"
 	}
 	// Secrets (wrangler secret put <NAME>):
 	//   KEY_ENCRYPTION_KEY  encrypts signing keys + TOTP secrets at rest

@@ -37,6 +37,7 @@ import { createGroup, deleteGroup, listGroups, updateGroup, type GroupRow } from
 import { listKeys, rotateKeys } from "../data/keys";
 import { createLoginLink, hasOpenLoginLink, revokeLoginLinks } from "../data/links";
 import { deletePasskey, listPasskeys } from "../data/passkeys";
+import { notify } from "../data/notices";
 import { listSessions } from "../data/sessions";
 import {
   adminUpdateUser,
@@ -435,9 +436,27 @@ admin.post("/admin/users/:id/profile", async (c) => {
   const problem = usernameProblem(update.username) ?? emailProblem(update.email) ?? pictureProblem(update.picture);
   if (problem) return userPage(c, id, { error: problem });
 
+  const before = await getUser(c.env, id);
   const error = await adminUpdateUser(c.env, id, update);
   if (error) return userPage(c, id, { error });
   await audit(c, "admin.user_updated", { target: id });
+  if (before) {
+    const changed = [
+      before.username !== update.username && `username to @${update.username}`,
+      before.email !== update.email && (update.email ? `email address to ${update.email}` : "email address (removed)"),
+      (before.name !== update.name || before.picture !== update.picture) && "name or picture",
+    ].filter((x): x is string => Boolean(x));
+    if (changed.length > 0) {
+      // A changed address: tell the old one, which the owner can still read.
+      const oldAddress = before.email !== update.email && before.email_verified ? before.email : undefined;
+      notify(c, id, {
+        subject: "An admin updated your account",
+        summary: `An administrator changed your ${changed.join(", ")}.`,
+        by: "admin",
+        ...(oldAddress ? { to: oldAddress } : {}),
+      });
+    }
+  }
   return c.redirect(`/admin/users/${encodeURIComponent(id)}?m=user-saved`);
 });
 
@@ -463,6 +482,11 @@ admin.post("/admin/users/:id/link", async (c) => {
   const ttl = Number((await form(c)).ttl);
   const link = await createLoginLink(c.env, id, c.get("user")!.id, LINK_TTLS.has(ttl) ? ttl : 3600);
   await audit(c, "admin.link_created", { target: id, detail: `ttl=${ttl}` });
+  notify(c, id, {
+    subject: "A sign-in link was created for you",
+    summary: "An administrator created a one-time link that signs in to your account without a password or passkey.",
+    by: "admin",
+  });
   return userPage(c, id, { link });
 });
 
@@ -475,8 +499,11 @@ admin.post("/admin/users/:id/link/revoke", async (c) => {
 
 admin.post("/admin/users/:id/passkeys/:pid/delete", async (c) => {
   const id = c.req.param("id");
-  await deletePasskey(c.env, id, c.req.param("pid"));
+  const name = await deletePasskey(c.env, id, c.req.param("pid"));
   await audit(c, "admin.passkey_removed", { target: id });
+  if (name) {
+    notify(c, id, { subject: "A passkey was removed", summary: `An administrator removed your passkey "${name}".`, by: "admin" });
+  }
   return c.redirect(`/admin/users/${encodeURIComponent(id)}?m=credential-removed`);
 });
 
@@ -484,6 +511,11 @@ admin.post("/admin/users/:id/password/remove", async (c) => {
   const id = c.req.param("id");
   await setPasswordHash(c.env, id, null);
   await audit(c, "admin.password_removed", { target: id });
+  notify(c, id, {
+    subject: "Your password was removed",
+    summary: "An administrator removed your password (and any two-factor codes).",
+    by: "admin",
+  });
   return c.redirect(`/admin/users/${encodeURIComponent(id)}?m=credential-removed`);
 });
 
@@ -491,6 +523,11 @@ admin.post("/admin/users/:id/totp/reset", async (c) => {
   const id = c.req.param("id");
   await disableTotp(c.env, id);
   await audit(c, "admin.totp_reset", { target: id });
+  notify(c, id, {
+    subject: "Two-factor codes turned off",
+    summary: "An administrator turned off two-factor codes for your account.",
+    by: "admin",
+  });
   return c.redirect(`/admin/users/${encodeURIComponent(id)}?m=credential-removed`);
 });
 
@@ -498,6 +535,11 @@ admin.post("/admin/users/:id/signout", async (c) => {
   const id = c.req.param("id");
   await c.env.DB.batch(revokeAllStatements(c.env, id));
   await audit(c, "admin.user_signed_out", { target: id });
+  notify(c, id, {
+    subject: "You were signed out everywhere",
+    summary: "An administrator signed your account out of every browser and app.",
+    by: "admin",
+  });
   if (id === c.get("user")!.id) return c.redirect("/login?m=signed-out");
   return c.redirect(`/admin/users/${encodeURIComponent(id)}?m=user-signed-out`);
 });
@@ -508,6 +550,7 @@ admin.post("/admin/users/:id/disable", async (c) => {
   await setDisabled(c.env, id, true);
   await revokeLoginLinks(c.env, id);
   await audit(c, "admin.user_disabled", { target: id });
+  notify(c, id, { subject: "Your account was disabled", summary: "An administrator disabled your account.", by: "admin" });
   return c.redirect(`/admin/users/${encodeURIComponent(id)}?m=user-disabled`);
 });
 
@@ -515,6 +558,7 @@ admin.post("/admin/users/:id/enable", async (c) => {
   const id = c.req.param("id");
   await setDisabled(c.env, id, false);
   await audit(c, "admin.user_enabled", { target: id });
+  notify(c, id, { subject: "Your account was enabled", summary: "An administrator enabled your account again.", by: "admin" });
   return c.redirect(`/admin/users/${encodeURIComponent(id)}?m=user-enabled`);
 });
 

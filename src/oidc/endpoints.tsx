@@ -53,6 +53,8 @@ oidc.get("/.well-known/openid-configuration", (c) => {
     userinfo_endpoint: `${iss}/userinfo`,
     jwks_uri: `${iss}/.well-known/jwks.json`,
     end_session_endpoint: `${iss}/end-session`,
+    op_policy_uri: `${iss}/privacy`,
+    op_tos_uri: `${iss}/terms`,
     revocation_endpoint: `${iss}/revoke`,
     scopes_supported: SUPPORTED_SCOPES,
     claims_supported: SUPPORTED_CLAIMS,

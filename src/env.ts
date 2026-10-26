@@ -15,6 +15,8 @@ export interface Env {
   REGISTRATION?: string;
   RESEND_API_KEY?: string;
   MAIL_FROM: string;
+  /** Shown on /privacy and /terms for data and account requests. */
+  CONTACT_EMAIL?: string;
 }
 
 export interface SessionInfo {
@@ -61,6 +63,10 @@ export const TTL = {
   emailVerification: 60 * 60 * 24,
   /** A used refresh token is honoured again for this long (racing app instances). */
   refreshReuseGrace: 60,
+  /** A browser that hasn't signed in for this long counts as new again. */
+  knownDevice: 60 * 60 * 24 * 365,
+  /** Sign-out links in security emails. */
+  signoutLink: 60 * 60 * 24 * 7,
   /** Retired signing keys stay in the JWKS this long so issued tokens verify. */
   retiredKey: 60 * 60 * 24 * 2,
 } as const;

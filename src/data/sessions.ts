@@ -8,6 +8,8 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { ADMIN_GROUP, TTL, isSecure, now, type AppContext, type CurrentUser, type Env, type SessionInfo } from "../env";
 import { randomToken, sha256Hex } from "../lib/crypto";
 import { clientIp, userAgent } from "../lib/http";
+import { amrLabel } from "../views/ui";
+import { notify } from "./notices";
 import { groupsFor, markLogin } from "./users";
 
 function cookieName(env: Env, base: string): string {
@@ -17,6 +19,7 @@ function cookieName(env: Env, base: string): string {
 
 export const sessionCookie = (env: Env) => cookieName(env, "sso_session");
 export const pendingCookie = (env: Env) => cookieName(env, "sso_pending");
+export const deviceCookie = (env: Env) => cookieName(env, "sso_device");
 
 export function writeCookie(c: AppContext, name: string, value: string, maxAge: number): void {
   setCookie(c, name, value, {
@@ -32,19 +35,30 @@ export function clearCookie(c: AppContext, name: string): void {
   deleteCookie(c, name, { path: "/", secure: isSecure(c.env) });
 }
 
-export async function startSession(c: AppContext, userId: string, amr: string[]): Promise<void> {
+/**
+ * Signs the browser in. Unless `alert` is false (a brand-new account), signing
+ * in from a browser this account hasn't used before emails the owner.
+ */
+export async function startSession(
+  c: AppContext,
+  userId: string,
+  amr: string[],
+  opts: { alert?: boolean } = {},
+): Promise<void> {
   // Drop whatever session this browser already had so ids never get reused
   // across a re-authentication.
   await endSession(c);
 
+  const device = await rememberDevice(c, userId);
   const token = randomToken(32);
+  const idHash = await sha256Hex(token);
   const ts = now();
   await c.env.DB.prepare(
-    `INSERT INTO sessions (id_hash, user_id, csrf, auth_time, amr, ip, user_agent, created_at, last_seen_at, expires_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO sessions (id_hash, user_id, csrf, auth_time, amr, ip, user_agent, created_at, last_seen_at, expires_at, device_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
-      await sha256Hex(token),
+      idHash,
       userId,
       randomToken(24),
       ts,
@@ -54,10 +68,46 @@ export async function startSession(c: AppContext, userId: string, amr: string[])
       ts,
       ts,
       ts + TTL.session,
+      device.hash,
     )
     .run();
   await markLogin(c.env, userId);
   writeCookie(c, sessionCookie(c.env), token, TTL.session);
+
+  if (device.isNew && opts.alert !== false) {
+    notify(c, userId, {
+      subject: "New sign-in",
+      summary: `Your account was signed in to from a device it hasn't used before, with ${amrLabel(amr)}.`,
+      by: "self",
+      sessionHash: idHash,
+    });
+  }
+}
+
+/**
+ * Every browser carries a random device id (one cookie, whoever signs in).
+ * Returns its hash and whether this account is seeing it for the first time.
+ */
+async function rememberDevice(c: AppContext, userId: string): Promise<{ hash: string; isNew: boolean }> {
+  let token = getCookie(c, deviceCookie(c.env));
+  if (!token || !/^[\w-]{20,64}$/.test(token)) token = randomToken(32);
+  writeCookie(c, deviceCookie(c.env), token, TTL.knownDevice);
+
+  const hash = await sha256Hex(token);
+  const ts = now();
+  const inserted = await c.env.DB.prepare(
+    `INSERT INTO known_devices (user_id, device_hash, first_seen_at, last_seen_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT (user_id, device_hash) DO NOTHING`,
+  )
+    .bind(userId, hash, ts, ts)
+    .run();
+  const isNew = inserted.meta.changes === 1;
+  if (!isNew) {
+    await c.env.DB.prepare("UPDATE known_devices SET last_seen_at = ? WHERE user_id = ? AND device_hash = ?")
+      .bind(ts, userId, hash)
+      .run();
+  }
+  return { hash, isNew };
 }
 
 export async function endSession(c: AppContext): Promise<void> {
@@ -153,10 +203,6 @@ export async function listSessions(env: Env, userId: string): Promise<SessionLis
     .bind(userId, now())
     .all<SessionListing>();
   return results;
-}
-
-export async function revokeSession(env: Env, userId: string, idHash: string): Promise<void> {
-  await env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND id_hash = ?").bind(userId, idHash).run();
 }
 
 export async function revokeOtherSessions(env: Env, userId: string, keepIdHash: string): Promise<void> {

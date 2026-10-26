@@ -51,8 +51,12 @@ export async function renamePasskey(env: Env, userId: string, id: string, name: 
   await env.DB.prepare("UPDATE passkeys SET name = ? WHERE id = ? AND user_id = ?").bind(name, id, userId).run();
 }
 
-export async function deletePasskey(env: Env, userId: string, id: string): Promise<void> {
-  await env.DB.prepare("DELETE FROM passkeys WHERE id = ? AND user_id = ?").bind(id, userId).run();
+/** Returns the removed passkey's name, or null if there was nothing to remove. */
+export async function deletePasskey(env: Env, userId: string, id: string): Promise<string | null> {
+  const row = await env.DB.prepare("DELETE FROM passkeys WHERE id = ? AND user_id = ? RETURNING name")
+    .bind(id, userId)
+    .first<{ name: string }>();
+  return row?.name ?? null;
 }
 
 async function saveChallenge(
@@ -166,16 +170,24 @@ export async function finishRegistration(
 
 // --- authentication ------------------------------------------------------------
 
+/**
+ * With no `userId`, a passkey-only sign-in: no allowCredentials, since passkeys
+ * are discoverable and the username never has to be typed. With one, the
+ * second step after a password, limited to that account's passkeys.
+ */
 export async function authenticationOptions(
   env: Env,
+  userId: string | null = null,
 ): Promise<{ id: string; options: PublicKeyCredentialRequestOptionsJSON }> {
-  // No allowCredentials: passkeys are discoverable, so the browser offers
-  // whichever ones it holds for this site and the username never has to be typed.
+  const allowCredentials = userId
+    ? (await listPasskeys(env, userId)).map((p) => ({ id: p.id, transports: JSON.parse(p.transports) as string[] }))
+    : undefined;
   const options = await generateAuthenticationOptions({
     rpID: rpId(env),
     userVerification: "required",
+    allowCredentials,
   });
-  const id = await saveChallenge(env, options.challenge, "login", null);
+  const id = await saveChallenge(env, options.challenge, "login", userId);
   return { id, options };
 }
 
@@ -185,16 +197,18 @@ export async function finishAuthentication(
   env: Env,
   challengeId: string,
   response: AuthenticationResponseJSON,
+  userId: string | null = null,
 ): Promise<AuthResult> {
   const failure = { ok: false, error: "That passkey couldn't be used to sign in." } as const;
 
-  const challenge = await takeChallenge(env, challengeId, "login", null);
+  const challenge = await takeChallenge(env, challengeId, "login", userId);
   if (!challenge) return { ok: false, error: "That sign-in attempt expired. Please try again." };
 
   const passkey = await env.DB.prepare("SELECT * FROM passkeys WHERE id = ?")
     .bind(String(response?.id ?? ""))
     .first<PasskeyRow>();
   if (!passkey) return { ok: false, error: "This passkey isn't registered here. It may have been removed." };
+  if (userId && passkey.user_id !== userId) return { ok: false, error: "That passkey belongs to a different account." };
 
   const handle = response.response?.userHandle;
   if (handle) {

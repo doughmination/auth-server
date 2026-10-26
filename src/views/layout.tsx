@@ -63,6 +63,10 @@ export async function render(c: AppContext, opts: PageOptions, body: Child): Pro
           )}
         </header>
         <main class={opts.narrow ? "narrow" : "wide"}>{body}</main>
+        <footer class="site-footer">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </footer>
       </body>
     </html>
   );

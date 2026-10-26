@@ -104,7 +104,7 @@ setup.post("/setup", async (c) => {
   });
   if (!id) return closed(c);
 
-  await startSession(c, id, ["setup"]);
+  await startSession(c, id, ["setup"], { alert: false });
   await audit(c, "setup.complete", { actor: id, target: username });
   return c.redirect("/account?m=setup-done");
 });

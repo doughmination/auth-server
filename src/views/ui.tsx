@@ -10,6 +10,7 @@ import type { Child } from "hono/jsx";
 // crafted link can't put words in this site's mouth.
 const MESSAGES: Record<string, string> = {
   "signed-out": "You're signed out.",
+  "account-deleted": "Your account has been deleted.",
   "setup-done": "Your admin account is ready. Add a passkey or password below so you can sign in again.",
   "link-welcome": "You're signed in. Add a passkey (or a password) now so you can sign in next time.",
   "welcome-verify": "Welcome! We've emailed you a link to verify your address. Add a passkey below while you wait.",
@@ -126,6 +127,18 @@ export function relative(ts: number | null | undefined): string {
   const [n, word] = unit as [number, string];
   const text = `${n} ${word}${n === 1 ? "" : "s"}`;
   return future ? `in ${text}` : `${text} ago`;
+}
+
+/** How a session signed in, from its RFC 8176 `amr` list. */
+export function amrLabel(amr: string[]): string {
+  const passkey = amr.includes("swk") || amr.includes("hwk");
+  if (passkey && amr.includes("pwd")) return "password + passkey";
+  if (passkey) return "passkey";
+  if (amr.includes("otp") && amr.includes("pwd")) return "password + code";
+  if (amr.includes("pwd")) return "password";
+  if (amr.includes("link")) return "sign-in link";
+  if (amr.includes("setup")) return "setup";
+  return "unknown";
 }
 
 /** Short, friendly browser + OS guess for session lists. */

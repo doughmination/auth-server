@@ -15,17 +15,18 @@ import { burnPasswordCheck, hashPassword, needsRehash, verifyPassword } from "..
 import { attempt, clearAttempts } from "../lib/ratelimit";
 import { verifyTotp } from "../lib/totp";
 import { normaliseUsername } from "../lib/validate";
-import { authenticationOptions, finishAuthentication } from "../data/passkeys";
+import { authenticationOptions, countPasskeys, finishAuthentication } from "../data/passkeys";
 import { consumeLoginLink, peekLoginLink } from "../data/links";
 import {
   endSession,
   finishPendingLogin,
   peekPendingLogin,
+  type PendingLogin,
   spendPendingAttempt,
   startPendingLogin,
   startSession,
 } from "../data/sessions";
-import { claimTotpStep, countUsers, getUser, getUserByUsername, setPasswordHash } from "../data/users";
+import { claimTotpStep, countUsers, getUser, getUserByUsername, setPasswordHash, type UserRow } from "../data/users";
 import { render } from "../views/layout";
 import { ErrorNote, Field, Flash } from "../views/ui";
 
@@ -149,9 +150,10 @@ login.post("/login/password", async (c) => {
     await setPasswordHash(c.env, user.id, await hashPassword(password));
   }
 
-  if (user.totp_secret) {
+  // Accounts with a passkey or two-factor codes need one of them as well.
+  if (await secondStepFor(c, user)) {
     await startPendingLogin(c, user.id, returnTo);
-    return c.redirect("/login/totp");
+    return c.redirect("/login/mfa");
   }
 
   await startSession(c, user.id, ["pwd"]);
@@ -159,30 +161,64 @@ login.post("/login/password", async (c) => {
   return c.redirect(returnTo);
 });
 
-function totpPage(c: AppContext, error?: string) {
+interface SecondStep {
+  totp: boolean;
+  passkey: boolean;
+}
+
+/** What a password sign-in still needs: a code, a passkey, or (neither set up) nothing. */
+async function secondStepFor(c: AppContext, user: UserRow): Promise<SecondStep | null> {
+  const step = { totp: Boolean(user.totp_secret), passkey: (await countPasskeys(c.env, user.id)) > 0 };
+  return step.totp || step.passkey ? step : null;
+}
+
+function secondStepPage(c: AppContext, step: SecondStep, error?: string) {
   return render(
     c,
-    { title: "Two-factor code", narrow: true, status: error ? 401 : 200 },
-    <div class="card">
-      <h1>Enter your code</h1>
-      <p class="muted">Open your authenticator app and enter the 6-digit code for this account.</p>
+    { title: "Confirm it's you", page: "mfa", narrow: true, status: error ? 401 : 200 },
+    <div class="card" id="mfa">
+      <h1>One more step</h1>
+      <p class="muted">
+        {step.totp && step.passkey
+          ? "Use one of your passkeys, or enter the code from your authenticator app."
+          : step.passkey
+            ? "Use one of your passkeys to finish signing in."
+            : "Open your authenticator app and enter the 6-digit code for this account."}
+      </p>
       <ErrorNote error={error} />
-      <form method="post" action="/login/totp" class="stack">
-        <Field
-          label="Code"
-          name="code"
-          required
-          autocomplete="one-time-code"
-          inputmode="numeric"
-          pattern="[0-9 ]{6,7}"
-          maxlength={7}
-          autofocus
-        />
-        <button type="submit" class="primary wide">
-          <Login class="icon" aria-hidden="true" />
-          Continue
+      <p class="notice error hidden" id="passkey-error" role="alert"></p>
+
+      {step.passkey && (
+        <button type="button" class={step.totp ? "wide" : "primary wide"} id="passkey-mfa">
+          <Key class="icon" aria-hidden="true" />
+          Use a passkey
         </button>
-      </form>
+      )}
+
+      {step.passkey && step.totp && (
+        <div class="divider">
+          <span>or enter a code</span>
+        </div>
+      )}
+
+      {step.totp && (
+        <form method="post" action="/login/mfa" class="stack">
+          <Field
+            label="Code"
+            name="code"
+            required
+            autocomplete="one-time-code"
+            inputmode="numeric"
+            pattern="[0-9 ]{6,7}"
+            maxlength={7}
+            autofocus
+          />
+          <button type="submit" class="primary wide">
+            <Login class="icon" aria-hidden="true" />
+            Continue
+          </button>
+        </form>
+      )}
 
       <p class="muted small">
         <a class="btn wide" href="/login">Start over</a>
@@ -191,38 +227,81 @@ function totpPage(c: AppContext, error?: string) {
   );
 }
 
-login.get("/login/totp", async (c) => {
-  if (!(await peekPendingLogin(c))) return c.redirect("/login");
-  return totpPage(c);
+/** The account half-way through a password sign-in, if it can still finish. */
+async function pendingUser(c: AppContext): Promise<{ pending: PendingLogin; user: UserRow; step: SecondStep } | null> {
+  const pending = await peekPendingLogin(c);
+  if (!pending) return null;
+  const user = await getUser(c.env, pending.user_id);
+  const step = user && !user.disabled ? await secondStepFor(c, user) : null;
+  if (!user || !step) {
+    await finishPendingLogin(c, pending.id_hash);
+    return null;
+  }
+  return { pending, user, step };
+}
+
+login.get("/login/mfa", async (c) => {
+  const found = await pendingUser(c);
+  if (!found) return c.redirect("/login");
+  return secondStepPage(c, found.step);
 });
 
-login.post("/login/totp", async (c) => {
+login.post("/login/mfa", async (c) => {
   const body = await form(c);
   const pending = await spendPendingAttempt(c, TOTP_ATTEMPTS);
   if (!pending) return c.redirect("/login");
 
   const user = await getUser(c.env, pending.user_id);
-  if (!user || user.disabled || !user.totp_secret) {
+  const step = user && !user.disabled ? await secondStepFor(c, user) : null;
+  if (!user || !step || !user.totp_secret) {
     await finishPendingLogin(c, pending.id_hash);
     return c.redirect("/login");
   }
 
   const secret = await decrypt(c.env.KEY_ENCRYPTION_KEY, user.totp_secret);
-  const step = await verifyTotp(secret, body.code ?? "", user.totp_last_step);
-  if (step === null || !(await claimTotpStep(c.env, user.id, step))) {
+  const totpStep = await verifyTotp(secret, body.code ?? "", user.totp_last_step);
+  if (totpStep === null || !(await claimTotpStep(c.env, user.id, totpStep))) {
     await audit(c, "login.failed", { actor: user.id, target: user.username, detail: "totp" });
     const left = TOTP_ATTEMPTS - pending.attempts;
     if (left <= 0) {
       await finishPendingLogin(c, pending.id_hash);
       return c.redirect("/login");
     }
-    return totpPage(c, `That code didn't work. ${left} ${left === 1 ? "try" : "tries"} left.`);
+    return secondStepPage(c, step, `That code didn't work. ${left} ${left === 1 ? "try" : "tries"} left.`);
   }
 
   await finishPendingLogin(c, pending.id_hash);
   await startSession(c, user.id, ["pwd", "otp", "mfa"]);
   await audit(c, "login.password_totp", { actor: user.id, target: user.username });
   return c.redirect(safeReturn(pending.return_to));
+});
+
+login.post("/login/mfa/passkey/options", async (c) => {
+  if (!(await attempt(c.env, `passkey-ip:${clientIp(c)}`, 120, WINDOW))) {
+    return c.json({ error: "Too many sign-in attempts. Wait a few minutes and try again." }, 429);
+  }
+  const found = await pendingUser(c);
+  if (!found?.step.passkey) return c.json({ error: "This sign-in expired. Start over." }, 401);
+  return c.json(await authenticationOptions(c.env, found.user.id));
+});
+
+login.post("/login/mfa/passkey/verify", async (c) => {
+  const body = await readJson<{ id?: string; response?: AuthenticationResponseJSON }>(c);
+  if (!body?.id || !body.response) return c.json({ error: "Malformed request." }, 400);
+  const found = await pendingUser(c);
+  if (!found) return c.json({ error: "This sign-in expired. Start over." }, 401);
+  const { pending, user } = found;
+
+  const result = await finishAuthentication(c.env, body.id, body.response, user.id);
+  if (!result.ok) {
+    await audit(c, "login.failed", { actor: user.id, target: user.username, detail: "passkey (second step)" });
+    return c.json({ error: result.error }, 401);
+  }
+
+  await finishPendingLogin(c, pending.id_hash);
+  await startSession(c, user.id, ["pwd", ...result.amr]);
+  await audit(c, "login.password_passkey", { actor: user.id, target: user.username });
+  return c.json({ redirect: safeReturn(pending.return_to) });
 });
 
 login.post("/login/passkey/options", async (c) => {

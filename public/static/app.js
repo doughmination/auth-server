@@ -160,6 +160,35 @@ function initLogin() {
   startConditional();
 }
 
+// --- second step after a password ------------------------------------------------
+
+function initMfa() {
+  const button = document.getElementById("passkey-mfa");
+  if (!button) return;
+
+  if (!window.PublicKeyCredential) {
+    button.disabled = true;
+    button.textContent = "Passkeys aren't supported in this browser";
+    return;
+  }
+
+  button.addEventListener("click", async () => {
+    showError("");
+    button.disabled = true;
+    try {
+      const { id, options } = await postJSON("/login/mfa/passkey/options");
+      const cred = await navigator.credentials.get({ publicKey: requestOptions(options) });
+      if (!cred) return;
+      const result = await postJSON("/login/mfa/passkey/verify", { id, response: credentialJSON(cred) });
+      window.location.href = result.redirect;
+    } catch (err) {
+      showError(webauthnMessage(err));
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
 // --- account -----------------------------------------------------------------------
 
 function initAccount() {
@@ -216,5 +245,6 @@ document.addEventListener("click", async (ev) => {
 document.addEventListener("DOMContentLoaded", () => {
   const page = document.body.dataset.page;
   if (page === "login") initLogin();
+  if (page === "mfa") initMfa();
   if (page === "account") initAccount();
 });

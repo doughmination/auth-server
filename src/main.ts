@@ -15,6 +15,8 @@ import { account } from "./routes/account";
 import { admin } from "./routes/admin";
 import { register } from "./routes/register";
 import { verify } from "./routes/verify";
+import { security } from "./routes/security";
+import { legal } from "./routes/legal";
 
 const app = new Hono<AppEnv>();
 
@@ -70,6 +72,8 @@ app.route("/", oidc);
 app.route("/", login);
 app.route("/", register);
 app.route("/", verify);
+app.route("/", security);
+app.route("/", legal);
 app.route("/", setup);
 app.route("/", account);
 app.route("/", admin);

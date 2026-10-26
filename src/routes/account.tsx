@@ -8,12 +8,12 @@ import { Hono } from "hono";
 import { Key, Save, Shield } from "pixelarticons/react";
 import { renderSVG } from "uqr";
 import type { RegistrationResponseJSON } from "@simplewebauthn/server";
-import { siteName, type AppContext, type AppEnv } from "../env";
+import { ADMIN_GROUP, siteName, type AppContext, type AppEnv } from "../env";
 import { audit } from "../lib/audit";
 import { decrypt, encrypt } from "../lib/crypto";
 import { form, readJson } from "../lib/http";
 import { requireCsrf, requireUser } from "../lib/guards";
-import { hashPassword, passwordProblem, PASSWORD_MIN } from "../lib/password";
+import { hashPassword, passwordProblem, PASSWORD_MIN, verifyPassword } from "../lib/password";
 import { generateTotpSecret, otpauthUri, verifyTotp } from "../lib/totp";
 import { cleanText, emailProblem, pictureProblem } from "../lib/validate";
 import {
@@ -24,9 +24,11 @@ import {
   registrationOptions,
   renamePasskey,
 } from "../data/passkeys";
-import { endSession, listSessions, revokeOtherSessions, revokeSession } from "../data/sessions";
+import { notify, notifyAccountDeleted, signOutDevice } from "../data/notices";
+import { endSession, listSessions, revokeOtherSessions } from "../data/sessions";
 import {
   claimTotpStep,
+  deleteUser,
   disableTotp,
   enableTotp,
   getUser,
@@ -37,7 +39,7 @@ import {
 } from "../data/users";
 import { sendVerificationEmail } from "../data/verifications";
 import { render } from "../views/layout";
-import { Csrf, ErrorNote, Field, Flash, Section, date, describeAgent, relative } from "../views/ui";
+import { Csrf, ErrorNote, Field, Flash, Section, amrLabel, date, describeAgent, relative } from "../views/ui";
 
 export const account = new Hono<AppEnv>();
 
@@ -48,16 +50,6 @@ async function me(c: AppContext): Promise<UserRow> {
   const user = await getUser(c.env, c.get("user")!.id);
   if (!user) throw new Error("session user vanished");
   return user;
-}
-
-function amrLabel(amr: string): string {
-  const list = JSON.parse(amr) as string[];
-  if (list.includes("swk") || list.includes("hwk")) return "passkey";
-  if (list.includes("otp") && list.includes("pwd")) return "password + code";
-  if (list.includes("pwd")) return "password";
-  if (list.includes("link")) return "sign-in link";
-  if (list.includes("setup")) return "setup";
-  return "unknown";
 }
 
 async function accountPage(c: AppContext, opts: { error?: string; status?: 400 } = {}) {
@@ -183,7 +175,10 @@ async function accountPage(c: AppContext, opts: { error?: string; status?: 400 }
         )}
       </Section>
 
-      <Section title="Two-factor codes" description="Asks for a code from an authenticator app after your password. Passkey sign-ins don't need it.">
+      <Section
+        title="Two-factor codes"
+        description="Asks for a code from an authenticator app after your password. Once you have a passkey or codes, a password alone can't sign in: it always needs one of them too. Passkey sign-ins need nothing else."
+      >
         {!user.password_hash ? (
           <p class="muted">Set a password first.</p>
         ) : user.totp_secret ? (
@@ -219,7 +214,7 @@ async function accountPage(c: AppContext, opts: { error?: string; status?: 400 }
                 {s.id_hash === session.idHash && <span class="badge">This browser</span>}
                 <br />
                 <small class="muted">
-                  {s.ip ?? "unknown IP"} · via {amrLabel(s.amr)} · signed in {date(s.created_at)} · active {relative(s.last_seen_at)}
+                  {s.ip ?? "unknown IP"} · via {amrLabel(JSON.parse(s.amr) as string[])} · signed in {date(s.created_at)} · active {relative(s.last_seen_at)}
                 </small>
               </div>
               <form method="post" action={`/account/sessions/${s.id_hash}/revoke`}>
@@ -235,6 +230,27 @@ async function accountPage(c: AppContext, opts: { error?: string; status?: 400 }
             <button type="submit" class="danger small">Sign out everywhere else</button>
           </form>
         )}
+      </Section>
+
+      <Section
+        title="Delete account"
+        description="Permanently deletes your account, passkeys, sessions and app sign-ins. Apps you've used may keep their own copy of your details; ask them separately. This can't be undone."
+      >
+        <form
+          method="post"
+          action="/account/delete"
+          class="stack"
+          data-confirm="Delete your account for good? This can't be undone."
+        >
+          <Csrf token={csrf} />
+          <Field label={`Type your username (${user.username}) to confirm`} name="confirm" required autocomplete="off" maxlength={64} />
+          {user.password_hash && (
+            <Field label="Password" name="password" type="password" required autocomplete="current-password" maxlength={512} />
+          )}
+          <div>
+            <button type="submit" class="danger">Delete my account</button>
+          </div>
+        </form>
       </Section>
     </>,
   );
@@ -255,6 +271,22 @@ account.post("/account/profile", async (c) => {
   const user = await me(c);
   await updateProfile(c.env, user, update);
   await audit(c, "account.profile");
+
+  const emailChanged = update.email !== user.email;
+  if (emailChanged && user.email && user.email_verified) {
+    // The old address hears about it: the new one isn't verified yet.
+    notify(c, user.id, {
+      subject: "Your email address was changed",
+      summary: update.email
+        ? `The email address on your account was changed from ${user.email} to ${update.email}.`
+        : `The email address ${user.email} was removed from your account.`,
+      by: "self",
+      to: user.email,
+    });
+  } else if (!emailChanged && (update.name !== user.name || update.picture !== user.picture)) {
+    notify(c, user.id, { subject: "Your profile was updated", summary: "Your name or picture was changed.", by: "self" });
+  }
+
   if (update.email && update.email !== user.email) {
     const sent = await sendVerificationEmail(c.env, user.id, update.email);
     return c.redirect(`/account?m=${sent === "sent" ? "verify-sent" : "verify-failed"}`);
@@ -284,6 +316,11 @@ account.post("/account/passkeys/verify", async (c) => {
   if (!result.ok) return c.json({ error: result.error }, 400);
 
   await audit(c, "account.passkey_added", { detail: name });
+  notify(c, c.get("user")!.id, {
+    subject: "A passkey was added",
+    summary: `A passkey named "${name}" was added to your account. It can sign in without a password.`,
+    by: "self",
+  });
   return c.json({ redirect: "/account?m=passkey-added" });
 });
 
@@ -303,8 +340,15 @@ account.post("/account/passkeys/:id/delete", async (c) => {
       status: 400,
     });
   }
-  await deletePasskey(c.env, user.id, c.req.param("id"));
+  const name = await deletePasskey(c.env, user.id, c.req.param("id"));
   await audit(c, "account.passkey_removed");
+  if (name) {
+    notify(c, user.id, {
+      subject: "A passkey was removed",
+      summary: `The passkey "${name}" was removed from your account.`,
+      by: "self",
+    });
+  }
   return c.redirect("/account?m=passkey-removed");
 });
 
@@ -322,6 +366,13 @@ account.post("/account/password", async (c) => {
   await setPasswordHash(c.env, user.id, await hashPassword(password));
   await revokeOtherSessions(c.env, user.id, c.get("session")!.idHash);
   await audit(c, "account.password_set");
+  notify(c, user.id, {
+    subject: user.password_hash ? "Your password was changed" : "A password was added",
+    summary: user.password_hash
+      ? "Your password was changed, and your other sessions were signed out."
+      : "A password was added to your account.",
+    by: "self",
+  });
   return c.redirect("/account?m=password-set");
 });
 
@@ -332,6 +383,11 @@ account.post("/account/password/remove", async (c) => {
   }
   await setPasswordHash(c.env, user.id, null);
   await audit(c, "account.password_removed");
+  notify(c, user.id, {
+    subject: "Your password was removed",
+    summary: "The password (and any two-factor codes) was removed from your account. It now signs in with passkeys only.",
+    by: "self",
+  });
   return c.redirect("/account?m=password-removed");
 });
 
@@ -396,6 +452,11 @@ account.post("/account/totp/confirm", async (c) => {
 
   await enableTotp(c.env, user.id, user.totp_pending, step);
   await audit(c, "account.totp_enabled");
+  notify(c, user.id, {
+    subject: "Two-factor codes turned on",
+    summary: "Two-factor codes were turned on. Password sign-ins now also need a code or a passkey.",
+    by: "self",
+  });
   return c.redirect("/account?m=totp-enabled");
 });
 
@@ -410,6 +471,11 @@ account.post("/account/totp/disable", async (c) => {
   }
   await disableTotp(c.env, user.id);
   await audit(c, "account.totp_disabled");
+  notify(c, user.id, {
+    subject: "Two-factor codes turned off",
+    summary: "Two-factor codes were turned off for your account.",
+    by: "self",
+  });
   return c.redirect("/account?m=totp-disabled");
 });
 
@@ -427,6 +493,42 @@ account.post("/account/sessions/:id/revoke", async (c) => {
     await endSession(c);
     return c.redirect("/login?m=signed-out");
   }
-  await revokeSession(c.env, c.get("user")!.id, id);
+  await signOutDevice(c.env, c.get("user")!.id, id);
   return c.redirect("/account?m=session-revoked");
+});
+
+// --- deletion --------------------------------------------------------------------
+
+account.post("/account/delete", async (c) => {
+  const user = await me(c);
+  const body = await form(c);
+
+  if ((body.confirm ?? "").trim().toLowerCase() !== user.username.toLowerCase()) {
+    return accountPage(c, { error: "Type your username exactly to delete your account.", status: 400 });
+  }
+  if (user.password_hash && !(await verifyPassword((body.password ?? "").slice(0, 512), user.password_hash))) {
+    return accountPage(c, { error: "That password isn't right, so your account wasn't deleted.", status: 400 });
+  }
+  if (c.get("user")!.isAdmin) {
+    const admins = await c.env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM user_groups g JOIN users u ON u.id = g.user_id
+       WHERE g.group_name = ? AND u.disabled = 0`,
+    )
+      .bind(ADMIN_GROUP)
+      .first<{ n: number }>();
+    if ((admins?.n ?? 0) <= 1) {
+      return accountPage(c, {
+        error: `You're the only admin. Add another member to ${ADMIN_GROUP} before deleting your account.`,
+        status: 400,
+      });
+    }
+  }
+
+  // Everything else (passkeys, sessions, tokens, devices, links) goes with the
+  // user row. The security log keeps only the id, until it expires.
+  notifyAccountDeleted(c, user);
+  await deleteUser(c.env, user.id);
+  await audit(c, "account.deleted", { actor: null, target: user.id });
+  await endSession(c);
+  return c.redirect("/login?m=account-deleted");
 });
