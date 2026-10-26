@@ -3,25 +3,58 @@
  * Licensed under the DASL-1.2 Licence.
  * See LICENCE.md in the project root for full licence information.
  */
+
+/* Look shared with the mail app (~/projects/email/src/web/app.css):
+   translucent raised surfaces, hairline borders, rounded cards, pill
+   buttons, the site wallpaper behind everything, Comic Code throughout. */
+
+@font-face {
+  font-family: "Comic Code";
+  src: url("https://m.doughmination.gay/f/Comic-Code/woff2/ComicCode-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Comic Code";
+  src: url("https://m.doughmination.gay/f/Comic-Code/woff2/ComicCode-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Comic Code";
+  src: url("https://m.doughmination.gay/f/Comic-Code/woff2/ComicCode-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Comic Code";
+  src: url("https://m.doughmination.gay/f/Comic-Code/woff2/ComicCode-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --bg: #07050a;
-  --surface: #100a10;
-  --surface-2: #1a1016;
-  --border: #34141c;
-  --border-strong: #5c1c28;
-  --text: #ece3e6;
-  --muted: #9c848c;
-  --accent: #9c1f34;
-  --accent-strong: #c22a44;
-  --accent-text: #fff2f2;
-  --ok: #5f9e78;
-  --ok-bg: rgba(95, 158, 120, 0.12);
-  --danger: #ff4d5e;
-  --danger-bg: rgba(255, 77, 94, 0.12);
-  --focus: #e23a52;
-  --focus-glow: rgba(226, 58, 82, 0.35);
-  --radius: 8px;
-  --display-font: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --bg: #0b0a0d;
+  --raised: rgb(255 255 255 / 3.5%);
+  --raised-hover: rgb(255 255 255 / 6%);
+  --line: rgb(255 255 255 / 9%);
+  --text: #ece9ef;
+  --muted: #a49eab;
+  --accent: #eb459e;
+  --accent-dim: rgb(235 69 158 / 14%);
+  --accent-line: rgb(235 69 158 / 40%);
+  --panel: rgb(11 10 13 / 72%);
+  --ok: #5fd3a0;
+  --ok-bg: rgb(95 211 160 / 10%);
+  --danger: #ff5c7a;
+  --danger-bg: rgb(255 92 122 / 10%);
+  --radius: 1rem;
+  --radius-sm: 0.5rem;
+  --font: "Comic Code", ui-monospace, monospace;
   color-scheme: dark;
 }
 
@@ -31,6 +64,11 @@
   box-sizing: border-box;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 14%) transparent;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -38,14 +76,38 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(ellipse 900px 480px at 50% -12%, rgba(156, 31, 52, 0.16), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 110%, rgba(92, 28, 40, 0.12), transparent 60%),
-    var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--text);
-  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
   cursor: url("https://m.doughmination.gay/cursors/sandrone/Normal.png") 0 0, default;
+}
+
+/* The site's wallpaper and fade, fixed behind the whole page. */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background: url("/static/background.avif") center / cover no-repeat;
+  opacity: 0.5;
+}
+
+body::after {
+  background:
+    linear-gradient(rgb(11 10 13 / 55%), rgb(11 10 13 / 80%) 55%, var(--bg)),
+    radial-gradient(70% 60% at 20% 30%, rgb(235 69 158 / 12%), transparent 70%);
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
 }
 
 a,
@@ -74,30 +136,36 @@ textarea:disabled,
 }
 
 a {
-  color: var(--accent-strong);
+  color: var(--text);
+  text-decoration-color: rgb(235 69 158 / 55%);
+  text-underline-offset: 0.2em;
 }
 
 a:hover {
-  color: var(--focus);
+  color: #fff;
+  text-decoration-color: var(--accent);
 }
 
 code {
-  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-family: var(--font);
   font-size: 0.9em;
   overflow-wrap: anywhere;
 }
 
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
 h1 {
-  font-family: var(--display-font);
-  font-size: 1.6rem;
-  letter-spacing: 0.015em;
+  font-size: 1.5rem;
   margin: 0 0 0.75rem;
 }
 
 h2 {
-  font-family: var(--display-font);
-  font-size: 1.15rem;
-  letter-spacing: 0.01em;
+  font-size: 1.1rem;
   margin: 0 0 0.5rem;
 }
 
@@ -113,6 +181,16 @@ h2 {
   display: none !important;
 }
 
+/* Small uppercase accent label. */
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 /* --- layout ------------------------------------------------------------------ */
 
 .topbar {
@@ -122,24 +200,26 @@ h2 {
   gap: 1rem;
   flex-wrap: wrap;
   padding: 0.75rem 16px;
-  background: linear-gradient(180deg, var(--surface), #0b070a);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(156, 31, 52, 0.25);
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(12px);
 }
 
 .brand {
   color: var(--text);
-  font-family: var(--display-font);
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 1.05rem;
+  font-weight: 700;
   text-decoration: none;
+}
+
+.brand:hover {
+  color: var(--accent);
 }
 
 .topbar nav {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 main {
@@ -158,13 +238,11 @@ main.narrow {
 
 .card,
 .panel {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-top: 1px solid var(--border-strong);
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 1.25rem;
-  box-shadow: 0 16px 32px -20px rgba(0, 0, 0, 0.8);
+  background: var(--raised);
+  backdrop-filter: blur(6px);
 }
 
 .panel {
@@ -176,31 +254,36 @@ main.narrow {
   gap: 0.4rem;
   overflow-x: auto;
   margin-bottom: 1.25rem;
-  padding-bottom: 0.25rem;
+  padding: 0.25rem 0.25rem 0.5rem;
 }
 
 .tabs a {
-  padding: 0.45rem 0.9rem;
-  border: 1px solid var(--border);
+  padding: 0.45rem 0.95rem;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface-2);
+  background: var(--raised);
   color: var(--muted);
   text-decoration: none;
   white-space: nowrap;
-  font-weight: 550;
-  font-size: 0.9rem;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
 }
 
 .tabs a:hover {
-  border-color: var(--accent-strong);
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 4px var(--accent-dim);
   color: var(--text);
 }
 
 .tabs a.active {
-  background: linear-gradient(180deg, var(--accent-strong), var(--accent) 85%);
-  border-color: var(--border-strong);
-  color: var(--accent-text);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
 }
 
 /* --- forms ------------------------------------------------------------------- */
@@ -220,12 +303,16 @@ main.narrow {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
 }
 
-.field > span {
-  font-weight: 550;
-  font-size: 0.9rem;
+.field > span,
+legend {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 input[type="text"],
@@ -236,17 +323,31 @@ select,
 textarea {
   width: 100%;
   min-width: 0;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgb(0 0 0 / 25%);
   color: var(--text);
   font: inherit;
+  font-size: 0.95rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 4px var(--accent-dim);
 }
 
 textarea {
   resize: vertical;
-  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   font-size: 0.875rem;
 }
 
@@ -254,24 +355,32 @@ input:disabled {
   opacity: 0.7;
 }
 
+/* Phones: 16px fields, or iOS Safari zooms the page on focus. */
+@media (max-width: 800px) {
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 :focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 5px var(--focus-glow);
-  border-radius: 4px;
+  outline: none;
+  box-shadow: 0 0 0 4px var(--accent-dim);
 }
 
 fieldset {
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
   padding: 0.75rem;
   margin: 0;
 }
 
 legend {
   padding: 0 0.3rem;
-  font-weight: 550;
-  font-size: 0.9rem;
 }
 
 .checks {
@@ -288,7 +397,10 @@ legend {
 
 .check input {
   margin-top: 0.3rem;
+  accent-color: var(--accent);
 }
+
+/* Buttons: pills. */
 
 button,
 .btn {
@@ -296,16 +408,19 @@ button,
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.55rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
+  padding: 0.45rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--raised);
   color: var(--text);
   font: inherit;
-  font-weight: 550;
+  font-size: 0.85rem;
+  font-weight: 500;
   text-decoration: none;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
 }
 
 .icon {
@@ -316,58 +431,75 @@ button,
 
 button:hover:not(:disabled),
 .btn:hover {
-  border-color: var(--accent-strong);
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 4px var(--accent-dim);
   color: var(--text);
 }
 
 button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 button.primary,
 .btn.primary {
-  background: linear-gradient(180deg, var(--accent-strong), var(--accent) 85%);
-  border-color: var(--border-strong);
-  color: var(--accent-text);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
 }
 
 button.primary:hover:not(:disabled),
 .btn.primary:hover {
-  border-color: var(--focus);
-  box-shadow: 0 0 0 3px var(--focus-glow);
-  color: var(--accent-text);
+  border-color: var(--accent);
+  color: #fff;
+  filter: brightness(1.12);
 }
 
 button.danger,
 .btn.danger {
+  border-color: rgb(255 92 122 / 40%);
+  color: var(--danger);
+}
+
+button.danger:hover:not(:disabled),
+.btn.danger:hover {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 4px rgb(255 92 122 / 14%);
   color: var(--danger);
 }
 
 button.small,
 .btn.small {
-  padding: 0.3rem 0.65rem;
-  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
 }
 
 button.wide,
 .btn.wide {
   width: 100%;
+  padding-block: 0.6rem;
 }
 
 button.link,
 .btn.link {
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: none;
-  color: var(--accent-strong);
+  color: var(--text);
+  font-size: inherit;
   font-weight: inherit;
   text-decoration: underline;
+  text-decoration-color: rgb(235 69 158 / 55%);
+  text-underline-offset: 0.2em;
 }
 
+button.link:hover:not(:disabled),
 .btn.link:hover {
   border-color: transparent;
-  color: var(--focus);
+  box-shadow: none;
+  color: #fff;
+  text-decoration-color: var(--accent);
 }
 
 form.inline {
@@ -406,13 +538,16 @@ form.inline {
 .divider::after {
   content: "";
   flex: 1;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--line);
 }
 
 details summary {
-  cursor: pointer;
   color: var(--muted);
   margin: 0.25rem 0;
+}
+
+details summary:hover {
+  color: var(--text);
 }
 
 details[open] summary {
@@ -422,10 +557,10 @@ details[open] summary {
 /* --- content ------------------------------------------------------------------ */
 
 .notice {
-  padding: 0.65rem 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
   margin: 0.75rem 0;
 }
 
@@ -434,34 +569,38 @@ details[open] summary {
 }
 
 .notice.ok {
-  border-color: var(--ok);
+  border-color: rgb(95 211 160 / 40%);
   background: var(--ok-bg);
 }
 
 .notice.error {
-  border-color: var(--danger);
+  border-color: rgb(255 92 122 / 40%);
   background: var(--danger-bg);
+}
+
+.error {
+  color: var(--danger);
 }
 
 .badge {
   display: inline-block;
   margin: 0.1rem 0.3rem 0.1rem 0;
-  padding: 0.05rem 0.5rem;
-  border: 1px solid var(--border);
+  padding: 0.05rem 0.55rem;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--muted);
   white-space: nowrap;
 }
 
 .badge.ok {
   color: var(--ok);
-  border-color: var(--ok);
+  border-color: rgb(95 211 160 / 40%);
 }
 
 .badge.danger {
   color: var(--danger);
-  border-color: var(--danger);
+  border-color: rgb(255 92 122 / 40%);
   margin-left: 0.4rem;
 }
 
@@ -476,7 +615,7 @@ details[open] summary {
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
 }
 
 .rows > li:last-child {
@@ -500,15 +639,17 @@ table {
 th,
 td {
   padding: 0.55rem 0.5rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
 }
 
 th {
-  color: var(--muted);
-  font-weight: 550;
-  font-size: 0.85rem;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 table.compact td {
@@ -538,14 +679,13 @@ table.compact td {
 
 .copyrow input {
   flex: 1;
-  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
 }
 
 .qr {
   display: block;
   margin: 1rem auto;
   background: #fff;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .secret code {
@@ -555,7 +695,17 @@ table.compact td {
 
 ::selection {
   background: var(--accent);
-  color: var(--accent-text);
+  color: #fff;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 560px) {
@@ -569,5 +719,14 @@ table.compact td {
 
   .kv dd {
     margin-bottom: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
   }
 }
