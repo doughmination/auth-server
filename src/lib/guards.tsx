@@ -5,7 +5,7 @@
  */
 
 import { createMiddleware } from "hono/factory";
-import { TTL, issuerOrigin, now, type AppContext, type AppEnv } from "../env";
+import { issuerOrigin, type AppContext, type AppEnv } from "../env";
 import { timingSafeEqualStr } from "./crypto";
 import { form, safeReturn } from "./http";
 import { ArrowLeft } from "pixelarticons/react";
@@ -15,10 +15,8 @@ function wantsJson(c: AppContext): boolean {
   return (c.req.header("content-type") ?? "").includes("application/json");
 }
 
-function loginUrl(returnTo: string, reauth = false): string {
-  const params = new URLSearchParams({ return: returnTo });
-  if (reauth) params.set("reauth", "1");
-  return `/login?${params}`;
+function loginUrl(returnTo: string): string {
+  return `/login?${new URLSearchParams({ return: returnTo })}`;
 }
 
 /** Where to come back to after signing in: the page, or for a POST, the page it came from. */
@@ -81,24 +79,3 @@ export const requireCsrf = createMiddleware<AppEnv>(async (c, next) => {
   await next();
 });
 
-/**
- * Changing how an account signs in (or anything in /admin) needs a recent
- * sign-in, so a session lifted from an unlocked machine can't be used to lock
- * the owner out.
- */
-export function recentAuthRedirect(c: AppContext, returnTo: string): Response | null {
-  const session = c.get("session");
-  if (session && now() - session.authTime <= TTL.recentAuth) return null;
-  const url = loginUrl(returnTarget(c, returnTo), true);
-  if (wantsJson(c)) return c.json({ error: "Please confirm it's you.", reauth: url }, 401);
-  return c.redirect(url);
-}
-
-export const requireRecentAuthForPosts = (returnTo: string) =>
-  createMiddleware<AppEnv>(async (c, next) => {
-    if (c.req.method === "POST") {
-      const redirect = recentAuthRedirect(c, returnTo);
-      if (redirect) return redirect;
-    }
-    await next();
-  });

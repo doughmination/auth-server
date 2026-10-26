@@ -49,7 +49,8 @@ export type AppContext = Context<AppEnv>;
 export const ADMIN_GROUP = "auth-admin";
 
 export const TTL = {
-  session: 60 * 60 * 24 * 14,
+  /** Signed-in sessions end this long after signing in; there is no re-auth prompt. */
+  session: 60 * 60 * 24,
   pendingLogin: 60 * 10,
   challenge: 60 * 5,
   authCode: 60,
@@ -60,8 +61,6 @@ export const TTL = {
   emailVerification: 60 * 60 * 24,
   /** A used refresh token is honoured again for this long (racing app instances). */
   refreshReuseGrace: 60,
-  /** Changing sign-in methods or using /admin needs a sign-in this recent. */
-  recentAuth: 60 * 30,
   /** Retired signing keys stay in the JWKS this long so issued tokens verify. */
   retiredKey: 60 * 60 * 24 * 2,
 } as const;

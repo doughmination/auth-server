@@ -10,7 +10,7 @@ import { AppWindows, Link, Save, UserPlus, Users } from "pixelarticons/react";
 import { ADMIN_GROUP, issuer, type AppContext, type AppEnv } from "../env";
 import { audit, recentAudit } from "../lib/audit";
 import { form, formAll, lines } from "../lib/http";
-import { requireAdmin, requireCsrf, requireRecentAuthForPosts, requireUser } from "../lib/guards";
+import { requireAdmin, requireCsrf, requireUser } from "../lib/guards";
 import {
   cleanText,
   clientIdProblem,
@@ -58,7 +58,7 @@ import { builtinReserved, listReserved, reserveUsername, unreserveUsername } fro
 export const admin = new Hono<AppEnv>();
 
 admin.use("/admin", requireUser, requireAdmin);
-admin.use("/admin/*", requireUser, requireAdmin, requireCsrf, requireRecentAuthForPosts("/admin"));
+admin.use("/admin/*", requireUser, requireAdmin, requireCsrf);
 
 admin.get("/admin", (c) => c.redirect("/admin/users"));
 

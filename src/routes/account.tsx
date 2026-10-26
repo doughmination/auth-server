@@ -8,11 +8,11 @@ import { Hono } from "hono";
 import { Key, Save, Shield } from "pixelarticons/react";
 import { renderSVG } from "uqr";
 import type { RegistrationResponseJSON } from "@simplewebauthn/server";
-import { TTL, now, siteName, type AppContext, type AppEnv } from "../env";
+import { siteName, type AppContext, type AppEnv } from "../env";
 import { audit } from "../lib/audit";
 import { decrypt, encrypt } from "../lib/crypto";
 import { form, readJson } from "../lib/http";
-import { recentAuthRedirect, requireCsrf, requireUser } from "../lib/guards";
+import { requireCsrf, requireUser } from "../lib/guards";
 import { hashPassword, passwordProblem, PASSWORD_MIN } from "../lib/password";
 import { generateTotpSecret, otpauthUri, verifyTotp } from "../lib/totp";
 import { cleanText, emailProblem, pictureProblem } from "../lib/validate";
@@ -65,7 +65,6 @@ async function accountPage(c: AppContext, opts: { error?: string; status?: 400 }
   const session = c.get("session")!;
   const [passkeys, sessions] = await Promise.all([listPasskeys(c.env, user.id), listSessions(c.env, user.id)]);
   const csrf = session.csrf;
-  const stale = now() - session.authTime > TTL.recentAuth;
 
   return render(
     c,
@@ -75,11 +74,6 @@ async function accountPage(c: AppContext, opts: { error?: string; status?: 400 }
       <Flash code={c.req.query("m")} />
       <ErrorNote error={opts.error} />
       <p class="notice error hidden" id="passkey-error" role="alert"></p>
-      {stale && (
-        <p class="notice">
-          You signed in {relative(session.authTime)}. Changing how you sign in will ask you to confirm it's you first.
-        </p>
-      )}
 
       <Section title="Profile" description="Shared with the apps you sign in to.">
         <form method="post" action="/account/profile" class="stack">
@@ -278,15 +272,10 @@ account.post("/account/email/verify", async (c) => {
 // --- passkeys --------------------------------------------------------------------
 
 account.post("/account/passkeys/options", async (c) => {
-  const reauth = recentAuthRedirect(c, "/account");
-  if (reauth) return reauth;
   return c.json(await registrationOptions(c.env, await me(c)));
 });
 
 account.post("/account/passkeys/verify", async (c) => {
-  const reauth = recentAuthRedirect(c, "/account");
-  if (reauth) return reauth;
-
   const body = await readJson<{ id?: string; response?: RegistrationResponseJSON; name?: string }>(c);
   if (!body?.id || !body.response) return c.json({ error: "Malformed request." }, 400);
 
@@ -307,9 +296,6 @@ account.post("/account/passkeys/:id/rename", async (c) => {
 });
 
 account.post("/account/passkeys/:id/delete", async (c) => {
-  const reauth = recentAuthRedirect(c, "/account");
-  if (reauth) return reauth;
-
   const user = await me(c);
   if (!user.password_hash && (await countPasskeys(c.env, user.id)) <= 1) {
     return accountPage(c, {
@@ -325,9 +311,6 @@ account.post("/account/passkeys/:id/delete", async (c) => {
 // --- password ------------------------------------------------------------------
 
 account.post("/account/password", async (c) => {
-  const reauth = recentAuthRedirect(c, "/account");
-  if (reauth) return reauth;
-
   const user = await me(c);
   const body = await form(c);
   const password = body.password ?? "";
@@ -343,9 +326,6 @@ account.post("/account/password", async (c) => {
 });
 
 account.post("/account/password/remove", async (c) => {
-  const reauth = recentAuthRedirect(c, "/account");
-  if (reauth) return reauth;
-
   const user = await me(c);
   if ((await countPasskeys(c.env, user.id)) === 0) {
     return accountPage(c, { error: "Add a passkey before removing your password.", status: 400 });
@@ -358,9 +338,6 @@ account.post("/account/password/remove", async (c) => {
 // --- TOTP ----------------------------------------------------------------------
 
 account.post("/account/totp/start", async (c) => {
-  const reauth = recentAuthRedirect(c, "/account");
-  if (reauth) return reauth;
-
   const user = await me(c);
   if (!user.password_hash) return c.redirect("/account");
   if (user.totp_secret) return c.redirect("/account");
@@ -410,9 +387,6 @@ async function totpSetupPage(c: AppContext, error?: string) {
 account.get("/account/totp", (c) => totpSetupPage(c));
 
 account.post("/account/totp/confirm", async (c) => {
-  const reauth = recentAuthRedirect(c, "/account");
-  if (reauth) return reauth;
-
   const user = await me(c);
   if (!user.totp_pending) return c.redirect("/account");
 
@@ -426,9 +400,6 @@ account.post("/account/totp/confirm", async (c) => {
 });
 
 account.post("/account/totp/disable", async (c) => {
-  const reauth = recentAuthRedirect(c, "/account");
-  if (reauth) return reauth;
-
   const user = await me(c);
   if (!user.totp_secret) return c.redirect("/account");
 

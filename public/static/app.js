@@ -84,10 +84,6 @@ async function postJSON(url, body) {
   } catch {
     // non-JSON error page
   }
-  if (res.status === 401 && data.reauth) {
-    window.location.href = data.reauth;
-    throw new Error("redirecting");
-  }
   if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
   return data;
 }
