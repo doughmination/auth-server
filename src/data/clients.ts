@@ -10,6 +10,7 @@ import { randomToken, sha256Hex, timingSafeEqualStr } from "../lib/crypto";
 interface ClientRow {
   id: string;
   name: string;
+  home_url: string | null;
   secret_hash: string | null;
   redirect_uris: string;
   post_logout_redirect_uris: string;
@@ -21,6 +22,8 @@ interface ClientRow {
 export interface Client {
   id: string;
   name: string;
+  /** The app's own website, linked from "Your apps". */
+  homeUrl: string | null;
   secretHash: string | null;
   isPublic: boolean;
   redirectUris: string[];
@@ -34,6 +37,7 @@ function toClient(row: ClientRow): Client {
   return {
     id: row.id,
     name: row.name,
+    homeUrl: row.home_url,
     secretHash: row.secret_hash,
     isPublic: row.secret_hash === null,
     redirectUris: JSON.parse(row.redirect_uris) as string[],
@@ -56,6 +60,7 @@ export async function listClients(env: Env): Promise<Client[]> {
 
 export interface ClientInput {
   name: string;
+  homeUrl: string | null;
   redirectUris: string[];
   postLogoutRedirectUris: string[];
   allowedGroups: string[];
@@ -76,12 +81,13 @@ export async function createClient(
   const ts = now();
   try {
     await env.DB.prepare(
-      `INSERT INTO clients (id, name, secret_hash, redirect_uris, post_logout_redirect_uris, allowed_groups, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO clients (id, name, home_url, secret_hash, redirect_uris, post_logout_redirect_uris, allowed_groups, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         id,
         input.name,
+        input.homeUrl,
         secret ? await sha256Hex(secret) : null,
         JSON.stringify(input.redirectUris),
         JSON.stringify(input.postLogoutRedirectUris),
@@ -99,11 +105,12 @@ export async function createClient(
 
 export async function updateClient(env: Env, id: string, input: ClientInput): Promise<void> {
   await env.DB.prepare(
-    `UPDATE clients SET name = ?, redirect_uris = ?, post_logout_redirect_uris = ?, allowed_groups = ?, updated_at = ?
+    `UPDATE clients SET name = ?, home_url = ?, redirect_uris = ?, post_logout_redirect_uris = ?, allowed_groups = ?, updated_at = ?
      WHERE id = ?`,
   )
     .bind(
       input.name,
+      input.homeUrl,
       JSON.stringify(input.redirectUris),
       JSON.stringify(input.postLogoutRedirectUris),
       JSON.stringify(input.allowedGroups),

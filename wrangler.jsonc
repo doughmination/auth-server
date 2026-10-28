@@ -2,7 +2,6 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "auth-server",
 	"main": "src/main.ts",
-	"tsconfig": "tsconfig.build.json",
 	"compatibility_date": "2026-09-01",
 	"compatibility_flags": [
 		"nodejs_compat"
@@ -13,16 +12,19 @@
 			"invocation_logs": true
 		}
 	},
-	// Stylesheet + browser script. Served straight from the edge; public/_headers
-	// gives them the same hardening headers the worker adds to its own responses.
-	"assets": {
-		"directory": "./public"
+	// The Svelte app (web/), built by Vite into dist/ before every dev/deploy.
+	"build": {
+		"command": "bun run build",
+		"watch_dir": "web"
 	},
-	// pixelarticons/react components call React's createElement; this repo
-	// renders with hono/jsx instead, which ships a React-API-compatible
-	// createElement, so the icons work without pulling in real React.
-	"alias": {
-		"react": "hono/jsx"
+	// The worker runs first for every request, so pages get the same host check
+	// and security headers as the API, then hands non-API paths to the assets.
+	// Unknown paths get index.html: the app's router shows the page (or a 404).
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS",
+		"run_worker_first": true,
+		"not_found_handling": "single-page-application"
 	},
 	"d1_databases": [
 		{

@@ -2,6 +2,10 @@
  * Copyright (c) 2026 Clove Nytrix Doughmination Twilight
  * Licensed under the DASL-1.2 Licence.
  * See LICENCE.md in the project root for full licence information.
+ *
+ * The Worker is the OpenID Connect provider plus a JSON API under /api. Every
+ * page is the Svelte app in web/, built into dist/ and served from here so it
+ * gets the same host check and security headers as everything else.
  */
 
 import { Hono } from "hono";
@@ -9,14 +13,13 @@ import { isSecure, issuerOrigin, type AppEnv, type Env } from "./env";
 import { loadSession } from "./data/sessions";
 import { sweepExpired } from "./data/cleanup";
 import { oidc } from "./oidc/endpoints";
-import { login } from "./routes/login";
-import { setup } from "./routes/setup";
-import { account } from "./routes/account";
-import { admin } from "./routes/admin";
-import { register } from "./routes/register";
-import { verify } from "./routes/verify";
-import { security } from "./routes/security";
-import { legal } from "./routes/legal";
+import { session } from "./api/session";
+import { login } from "./api/login";
+import { signup } from "./api/signup";
+import { emailed } from "./api/emailed";
+import { account } from "./api/account";
+import { admin } from "./api/admin";
+import { apps } from "./api/apps";
 
 const app = new Hono<AppEnv>();
 
@@ -39,7 +42,7 @@ app.use("*", async (c, next) => {
 
   // CSRF, layer one: browsers label every cross-site request with Origin or
   // Sec-Fetch-Site, so state-changing requests from elsewhere are refused.
-  // Session-bound forms additionally carry a CSRF token (lib/guards).
+  // Session-bound API calls additionally carry a CSRF token (lib/guards).
   const safe = c.req.method === "GET" || c.req.method === "HEAD" || c.req.method === "OPTIONS";
   if (!safe && !CROSS_ORIGIN_POSTS.has(url.pathname)) {
     const sentOrigin = c.req.header("origin");
@@ -49,13 +52,14 @@ app.use("*", async (c, next) => {
     }
   }
 
-  await loadSession(c);
+  // Static files don't need to know who's signed in.
+  if (!url.pathname.startsWith("/assets/") && !url.pathname.startsWith("/static/")) await loadSession(c);
   await next();
 
   const h = c.res.headers;
   h.set(
     "Content-Security-Policy",
-    "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; font-src https://m.doughmination.gay; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+    "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; font-src https://m.doughmination.gay; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
   );
   h.set("X-Frame-Options", "DENY");
   h.set("X-Content-Type-Options", "nosniff");
@@ -66,22 +70,38 @@ app.use("*", async (c, next) => {
   if (!h.has("Cache-Control")) h.set("Cache-Control", "no-store");
 });
 
-app.get("/", (c) => c.redirect(c.get("user") ? "/account" : "/login"));
-
 app.route("/", oidc);
+app.route("/", session);
 app.route("/", login);
-app.route("/", register);
-app.route("/", verify);
-app.route("/", security);
-app.route("/", legal);
-app.route("/", setup);
+app.route("/", signup);
+app.route("/", emailed);
 app.route("/", account);
 app.route("/", admin);
+app.route("/", apps);
+
+app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
+
+// Everything else is the Svelte app: its files, or index.html for any page URL
+// (wrangler.jsonc sets not_found_handling to single-page-application).
+app.get("*", async (c) => {
+  const asset = await c.env.ASSETS.fetch(c.req.raw);
+  // Responses from fetch() have immutable headers; copy so the middleware can add its own.
+  const res = new Response(asset.body, asset);
+  const path = new URL(c.req.url).pathname;
+  // Vite puts a content hash in every file name under /assets, so they never change.
+  if (path.startsWith("/assets/")) res.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  else if (path.startsWith("/static/")) res.headers.set("Cache-Control", "public, max-age=3600");
+  else res.headers.set("Cache-Control", "no-cache");
+  return res;
+});
 
 app.notFound((c) => c.text("Not found", 404));
 
 app.onError((err, c) => {
   console.error("[error]", c.req.method, new URL(c.req.url).pathname, err);
+  if (new URL(c.req.url).pathname.startsWith("/api/")) {
+    return c.json({ error: "Something went wrong on our side. Please try again." }, 500);
+  }
   return c.text("Something went wrong on our side. Please try again.", 500);
 });
 

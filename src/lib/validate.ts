@@ -71,6 +71,21 @@ function isLoopback(hostname: string): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
 }
 
+/** An app's website: an absolute https URL (plain http only for loopback). */
+export function homeUrlProblem(url: string | null): string | null {
+  if (url === null) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return "The website isn't a valid URL.";
+  }
+  if (url.length > 2048) return "The website URL is too long.";
+  if (parsed.protocol === "https:") return null;
+  if (parsed.protocol === "http:" && isLoopback(parsed.hostname)) return null;
+  return "The website must use https (http is only allowed for localhost).";
+}
+
 /**
  * Redirect URIs are matched exactly, so validation only has to make sure they
  * are absolute, have no fragment, and use https (plain http only for loopback).

@@ -18,6 +18,7 @@ export async function sweepExpired(env: Env): Promise<void> {
     env.DB.prepare("DELETE FROM webauthn_challenges WHERE expires_at <= ?").bind(ts),
     env.DB.prepare("DELETE FROM login_links WHERE expires_at <= ?").bind(ts),
     env.DB.prepare("DELETE FROM email_verifications WHERE expires_at <= ?").bind(ts),
+    env.DB.prepare("DELETE FROM password_resets WHERE expires_at <= ?").bind(ts),
     env.DB.prepare("DELETE FROM signout_links WHERE expires_at <= ?").bind(ts),
     env.DB.prepare("DELETE FROM known_devices WHERE last_seen_at <= ?").bind(ts - TTL.knownDevice),
     env.DB.prepare("DELETE FROM auth_codes WHERE expires_at <= ?").bind(ts),

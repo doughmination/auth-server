@@ -8,6 +8,8 @@ import type { Context } from "hono";
 
 export interface Env {
   DB: D1Database;
+  /** The built Svelte app (dist/). */
+  ASSETS: Fetcher;
   ISSUER: string;
   SITE_NAME: string;
   KEY_ENCRYPTION_KEY: string;
@@ -61,6 +63,8 @@ export const TTL = {
   refreshToken: 60 * 60 * 24 * 30,
   /** Email verification links. */
   emailVerification: 60 * 60 * 24,
+  /** "Forgot password" links. */
+  passwordReset: 60 * 60,
   /** A used refresh token is honoured again for this long (racing app instances). */
   refreshReuseGrace: 60,
   /** A browser that hasn't signed in for this long counts as new again. */

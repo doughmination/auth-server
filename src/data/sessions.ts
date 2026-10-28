@@ -8,7 +8,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { ADMIN_GROUP, TTL, isSecure, now, type AppContext, type CurrentUser, type Env, type SessionInfo } from "../env";
 import { randomToken, sha256Hex } from "../lib/crypto";
 import { clientIp, userAgent } from "../lib/http";
-import { amrLabel } from "../views/ui";
+import { amrLabel } from "../lib/format";
 import { notify } from "./notices";
 import { groupsFor, markLogin } from "./users";
 

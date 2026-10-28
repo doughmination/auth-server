@@ -1,0 +1,63 @@
+{
+  "extends": "../web/tsconfig.json",
+  "compilerOptions": {
+    "rootDirs": [
+      "../web",
+      "svelte"
+    ],
+    "allowArbitraryExtensions": true,
+    "noEmit": true,
+    "incremental": false,
+    "tsBuildInfoFile": "tsbuildinfo.json"
+  },
+  "files": [
+    "../node_modules/svelte-check/dist/src/svelte-shims-v4.d.ts",
+    "../node_modules/svelte/svelte-html.d.ts"
+  ],
+  "include": [
+    "../web/src/**/*.ts",
+    "../web/src/**/*.svelte",
+    "svelte/src/**/*.ts",
+    "svelte/src/**/*.d.svelte.ts"
+  ],
+  "exclude": [
+    "../web/src/App.svelte",
+    "../web/src/components/AdminTabs.svelte",
+    "../web/src/components/Card.svelte",
+    "../web/src/components/ClientFields.svelte",
+    "../web/src/components/CopyRow.svelte",
+    "../web/src/components/Field.svelte",
+    "../web/src/components/Flash.svelte",
+    "../web/src/components/GroupChecks.svelte",
+    "../web/src/components/Notes.svelte",
+    "../web/src/components/Section.svelte",
+    "../web/src/components/Title.svelte",
+    "../web/src/pages/Apps.svelte",
+    "../web/src/pages/AuthorizeNotice.svelte",
+    "../web/src/pages/Contact.svelte",
+    "../web/src/pages/EndSession.svelte",
+    "../web/src/pages/ErrorPage.svelte",
+    "../web/src/pages/Forgot.svelte",
+    "../web/src/pages/Login.svelte",
+    "../web/src/pages/LoginLink.svelte",
+    "../web/src/pages/Mfa.svelte",
+    "../web/src/pages/NotFound.svelte",
+    "../web/src/pages/Privacy.svelte",
+    "../web/src/pages/Register.svelte",
+    "../web/src/pages/Reset.svelte",
+    "../web/src/pages/Security.svelte",
+    "../web/src/pages/Settings.svelte",
+    "../web/src/pages/Setup.svelte",
+    "../web/src/pages/Terms.svelte",
+    "../web/src/pages/TotpSetup.svelte",
+    "../web/src/pages/VerifyEmail.svelte",
+    "../web/src/pages/admin/Audit.svelte",
+    "../web/src/pages/admin/ClientDetail.svelte",
+    "../web/src/pages/admin/Clients.svelte",
+    "../web/src/pages/admin/Groups.svelte",
+    "../web/src/pages/admin/Keys.svelte",
+    "../web/src/pages/admin/Reserved.svelte",
+    "../web/src/pages/admin/UserDetail.svelte",
+    "../web/src/pages/admin/Users.svelte"
+  ]
+}

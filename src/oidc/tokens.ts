@@ -191,7 +191,12 @@ export async function verifyAccessToken(env: Env, token: string): Promise<Access
  */
 export async function verifyIdTokenHint(env: Env, token: string): Promise<{ sub: string; aud: string[] } | null> {
   try {
-    const { payload } = await withKeys(env, (keys) => compactVerify(token, keys, { algorithms: [ALG] }));
+    const { payload, protectedHeader } = await withKeys(env, (keys) =>
+      compactVerify(token, keys, { algorithms: [ALG] }),
+    );
+    // Access tokens are signed with the same key and also carry sub and aud;
+    // anyone they were handed to (an API) mustn't be able to sign the user out.
+    if (protectedHeader.typ === "at+jwt") return null;
     const claims = JSON.parse(new TextDecoder().decode(payload)) as JWTPayload;
     if (claims.iss !== issuer(env) || typeof claims.sub !== "string") return null;
     const aud = Array.isArray(claims.aud) ? claims.aud : claims.aud ? [claims.aud] : [];

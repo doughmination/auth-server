@@ -8,7 +8,7 @@ import { TTL, issuer, now, siteName, type AppContext, type Env } from "../env";
 import { randomToken, sha256Hex } from "../lib/crypto";
 import { clientIp, userAgent } from "../lib/http";
 import { sendMail } from "../lib/mail";
-import { date, describeAgent } from "../views/ui";
+import { date, describeAgent } from "../lib/format";
 import { getUser, revokeAllStatements, type UserRow } from "./users";
 
 export interface Notice {
@@ -65,7 +65,7 @@ async function sendNotice(env: Env, userId: string, notice: Notice, origin: Orig
   if (!to) return;
 
   const site = siteName(env);
-  const accountUrl = `${issuer(env)}/account`;
+  const accountUrl = `${issuer(env)}/settings`;
   const link = notice.by === "self" ? await createSignoutLink(env, userId, notice.sessionHash ?? null) : null;
 
   const details: [string, string][] =
