@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { LogIn, LogOut } from "@lucide/svelte";
+  import LogIn from "../lib/icons/LogIn.svelte";
+  import LogOut from "../lib/icons/LogOut.svelte";
   import { api, confirmed } from "../lib/api";
   import { Action } from "../lib/action.svelte";
   import Card from "../components/Card.svelte";

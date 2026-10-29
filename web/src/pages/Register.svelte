@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { LogIn, UserPlus } from "@lucide/svelte";
+  import LogIn from "../lib/icons/LogIn.svelte";
+  import UserPlus from "../lib/icons/UserPlus.svelte";
   import { api } from "../lib/api";
   import { Action } from "../lib/action.svelte";
   import { navigate, query, reload } from "../lib/router.svelte";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { KeyRound } from "@lucide/svelte";
+  import KeyRound from "../lib/icons/KeyRound.svelte";
   import { api } from "../lib/api";
   import { Action } from "../lib/action.svelte";
   import { navigate, query, reload } from "../lib/router.svelte";

@@ -1,6 +1,7 @@
 ///<reference types="svelte" />
 ;
-import { LogIn, UserPlus } from "@lucide/svelte";
+import LogIn from "../lib/icons/LogIn.svelte";
+import UserPlus from "../lib/icons/UserPlus.svelte";
 import { ApiError, api } from "../lib/api";
 import { Action } from "../lib/action.svelte";
 import { reload } from "../lib/router.svelte";
@@ -9,6 +10,7 @@ import Field from "../components/Field.svelte";
 import Notes from "../components/Notes.svelte";
 function $$render() {
 
+  
   
   
   

@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { Component } from "svelte";
-  import { ArrowLeft, LayoutGrid, LogOut, Settings as SettingsIcon, Shield } from "@lucide/svelte";
+  import ArrowLeft from "./lib/icons/ArrowLeft.svelte";
+  import LayoutGrid from "./lib/icons/LayoutGrid.svelte";
+  import LogOut from "./lib/icons/LogOut.svelte";
+  import SettingsIcon from "./lib/icons/Settings.svelte";
+  import Shield from "./lib/icons/Shield.svelte";
   import { api, errorText } from "./lib/api";
   import { here, navigate, reload, route } from "./lib/router.svelte";
   import { session } from "./lib/session.svelte";

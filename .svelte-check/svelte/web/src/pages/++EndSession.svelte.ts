@@ -1,6 +1,6 @@
 ///<reference types="svelte" />
 ;
-import { LogOut } from "@lucide/svelte";
+import LogOut from "../lib/icons/LogOut.svelte";
 import { api } from "../lib/api";
 import { Action } from "../lib/action.svelte";
 import { navigate, query, reload, route } from "../lib/router.svelte";

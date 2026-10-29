@@ -1,6 +1,7 @@
 ///<reference types="svelte" />
 ;
-import { Check, LogIn } from "@lucide/svelte";
+import Check from "../lib/icons/Check.svelte";
+import LogIn from "../lib/icons/LogIn.svelte";
 import { api } from "../lib/api";
 import { Action } from "../lib/action.svelte";
 import { reload } from "../lib/router.svelte";
@@ -9,6 +10,7 @@ import Notes from "../components/Notes.svelte";
 
 ;type $$ComponentProps =  { params: Record<string, string> };function $$render() {
 
+  
   
   
   

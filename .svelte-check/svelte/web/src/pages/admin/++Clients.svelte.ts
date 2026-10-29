@@ -16,7 +16,7 @@
   export const newSecrets = new Map<string, string>();
 ;;
 
-import { AppWindow } from "@lucide/svelte";
+import AppWindow from "../../lib/icons/AppWindow.svelte";
 import { api } from "../../lib/api";
 import { Action } from "../../lib/action.svelte";
 import { navigate } from "../../lib/router.svelte";

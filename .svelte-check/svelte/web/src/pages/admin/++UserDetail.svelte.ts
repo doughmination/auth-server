@@ -1,6 +1,7 @@
 ///<reference types="svelte" />
 ;
-import { Link, Save } from "@lucide/svelte";
+import Link from "../../lib/icons/Link.svelte";
+import Save from "../../lib/icons/Save.svelte";
 import { api, confirmed } from "../../lib/api";
 import { Action } from "../../lib/action.svelte";
 import { date, plural, relative } from "../../lib/format";
@@ -35,6 +36,7 @@ import Title from "../../components/Title.svelte";
   };
 ;type $$ComponentProps =  { params: Record<string, string> };function $$render() {
 
+  
   
   
   

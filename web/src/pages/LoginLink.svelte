@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LogIn } from "@lucide/svelte";
+  import LogIn from "../lib/icons/LogIn.svelte";
   import { api } from "../lib/api";
   import { Action } from "../lib/action.svelte";
   import { reload } from "../lib/router.svelte";
