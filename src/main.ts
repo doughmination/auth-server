@@ -59,7 +59,7 @@ app.use("*", async (c, next) => {
   const h = c.res.headers;
   h.set(
     "Content-Security-Policy",
-    "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; font-src 'self' https://raw.doughmination.gay; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+    "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-hashes' 'sha256-muhGX4Mn7np2XQi6DH6Iz+0SHdws6/BLgVigE46O3Xc='; img-src 'self' https: data:; font-src 'self' https://raw.doughmination.gay; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
   );
   h.set("X-Frame-Options", "DENY");
   h.set("X-Content-Type-Options", "nosniff");
