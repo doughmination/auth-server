@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { UserPlus } from "@lucide/svelte";
+  import UserPlus from "../../lib/icons/UserPlus.svelte";
   import { api } from "../../lib/api";
   import { Action } from "../../lib/action.svelte";
   import { relative } from "../../lib/format";

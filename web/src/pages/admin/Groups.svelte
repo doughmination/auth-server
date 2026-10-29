@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Save, Users } from "@lucide/svelte";
+  import Save from "../../lib/icons/Save.svelte";
+  import Users from "../../lib/icons/Users.svelte";
   import { api, confirmed } from "../../lib/api";
   import { Action } from "../../lib/action.svelte";
   import { plural } from "../../lib/format";

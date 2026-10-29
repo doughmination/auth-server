@@ -12,6 +12,10 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 export default defineConfig({
   root: "web",
   plugins: [svelte()],
+  // iconsax fetches its icon data relative to its own file, which pre-bundling breaks
+  optimizeDeps: {
+    exclude: ["iconsax"],
+  },
   build: {
     outDir: "../dist",
     emptyOutDir: true,

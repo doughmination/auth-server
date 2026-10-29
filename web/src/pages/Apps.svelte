@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ExternalLink } from "@lucide/svelte";
+  import ExternalLink from "../lib/icons/ExternalLink.svelte";
   import { api } from "../lib/api";
   import { Action } from "../lib/action.svelte";
   import { session } from "../lib/session.svelte";

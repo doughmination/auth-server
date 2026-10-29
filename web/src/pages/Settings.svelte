@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { KeyRound, Save } from "@lucide/svelte";
+  import KeyRound from "../lib/icons/KeyRound.svelte";
+  import Save from "../lib/icons/Save.svelte";
   import { api, confirmed } from "../lib/api";
   import { Action } from "../lib/action.svelte";
   import { date, relative } from "../lib/format";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Shield } from "@lucide/svelte";
+  import Shield from "../lib/icons/Shield.svelte";
   import { api } from "../lib/api";
   import { Action } from "../lib/action.svelte";
   import { navigate } from "../lib/router.svelte";

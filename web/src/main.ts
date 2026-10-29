@@ -6,6 +6,8 @@
 
 import { mount } from "svelte";
 import "./app.css";
+// Registers <iconsax-icon>, the icon set doughmination.gay uses
+import "iconsax";
 import App from "./App.svelte";
 import { loadSession } from "./lib/session.svelte";
 

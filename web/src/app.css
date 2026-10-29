@@ -6,32 +6,66 @@
 
 /* Look shared with the mail app (~/projects/email/src/web/app.css):
    translucent raised surfaces, hairline borders, rounded cards, pill
-   buttons, the site wallpaper behind everything, Comic Code throughout. */
+   buttons, the site wallpaper behind everything. IBM Plex Sans for text and
+   Comic Code for monospace, as on doughmination.gay. */
+
+/* IBM Plex Sans for text, as on doughmination.gay; Comic Code for anything monospace */
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("./fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("./fonts/IBMPlexSans-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("./fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("./fonts/IBMPlexSans-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
 
 @font-face {
   font-family: "Comic Code";
-  src: url("https://m.doughmination.gay/f/Comic-Code/woff2/ComicCode-Regular.woff2") format("woff2");
+  src: url("https://raw.doughmination.gay/f/Comic-Code/woff2/ComicCode-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Comic Code";
-  src: url("https://m.doughmination.gay/f/Comic-Code/woff2/ComicCode-Italic.woff2") format("woff2");
+  src: url("https://raw.doughmination.gay/f/Comic-Code/woff2/ComicCode-Italic.woff2") format("woff2");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Comic Code";
-  src: url("https://m.doughmination.gay/f/Comic-Code/woff2/ComicCode-Medium.woff2") format("woff2");
+  src: url("https://raw.doughmination.gay/f/Comic-Code/woff2/ComicCode-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Comic Code";
-  src: url("https://m.doughmination.gay/f/Comic-Code/woff2/ComicCode-Bold.woff2") format("woff2");
+  src: url("https://raw.doughmination.gay/f/Comic-Code/woff2/ComicCode-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -54,7 +88,8 @@
   --danger-bg: rgb(255 92 122 / 10%);
   --radius: 1rem;
   --radius-sm: 0.5rem;
-  --font: "Comic Code", ui-monospace, monospace;
+  --font: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "Comic Code", ui-monospace, "Cascadia Code", Menlo, monospace;
   color-scheme: dark;
 }
 
@@ -81,7 +116,6 @@ body {
   font-family: var(--font);
   font-size: 15px;
   line-height: 1.6;
-  cursor: url("https://m.doughmination.gay/cursors/sandrone/Normal.png") 0 0, default;
 }
 
 /* The site's wallpaper and fade, fixed behind the whole page. */
@@ -116,7 +150,7 @@ button,
 select,
 summary,
 label[for] {
-  cursor: url("https://m.doughmination.gay/cursors/sandrone/Link.png") 4 0, pointer;
+  cursor: pointer;
 }
 
 input[type="text"],
@@ -124,7 +158,7 @@ input[type="password"],
 input[type="email"],
 input[type="url"],
 textarea {
-  cursor: url("https://m.doughmination.gay/cursors/sandrone/Text.png") 4 9, text;
+  cursor: text;
 }
 
 button:disabled,
@@ -132,7 +166,7 @@ input:disabled,
 select:disabled,
 textarea:disabled,
 [aria-disabled="true"] {
-  cursor: url("https://m.doughmination.gay/cursors/sandrone/Unavailable.png") 0 0, not-allowed;
+  cursor: not-allowed;
 }
 
 a {
@@ -146,8 +180,11 @@ a:hover {
   text-decoration-color: var(--accent);
 }
 
-code {
-  font-family: var(--font);
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--mono);
   font-size: 0.9em;
   overflow-wrap: anywhere;
 }
@@ -810,4 +847,15 @@ table.compact td {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* iconsax renders its <svg> inside the element, so size that from the class */
+iconsax-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+iconsax-icon.icon svg {
+  width: 100%;
+  height: 100%;
 }

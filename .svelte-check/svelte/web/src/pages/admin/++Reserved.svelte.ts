@@ -1,6 +1,6 @@
 ///<reference types="svelte" />
 ;
-import { Save } from "@lucide/svelte";
+import Save from "../../lib/icons/Save.svelte";
 import { api, confirmed } from "../../lib/api";
 import { Action } from "../../lib/action.svelte";
 import AdminTabs from "../../components/AdminTabs.svelte";
