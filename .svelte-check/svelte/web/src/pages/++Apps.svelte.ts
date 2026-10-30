@@ -21,11 +21,15 @@ function $$render() {
     id: string;
     name: string;
     url: string;
+    iconUrl: string | null;
   }
 
   let apps = $state<App[] | null>(null);
   const load = new Action();
   load.run(async () => (apps = await api<App[]>("/api/apps")));
+
+  // Icons that didn't load fall back to the app's initial
+  let brokenIcons = $state(new Set<string>());
 
   function host(url: string): string {
     try {
@@ -57,7 +61,11 @@ if(apps){
          for(let app of __sveltets_2_ensureArray(apps)){app.id;
          { svelteHTML.createElement("li", {});
            { svelteHTML.createElement("a", {     "class":`app-tile`,"href":app.url,"rel":`noopener`,});
-             { svelteHTML.createElement("span", {   "class":`app-mark`,"aria-hidden":`true`,});app.name.slice(0, 1).toUpperCase(); }
+            if(app.iconUrl && !brokenIcons.has(app.id)){
+               { svelteHTML.createElement("img", {          "class":`app-mark`,"src":app.iconUrl,"alt":"","referrerpolicy":`no-referrer`,"onerror":() => (brokenIcons = new Set(brokenIcons).add(app.id)),});}
+            }else{
+               { svelteHTML.createElement("span", {   "class":`app-mark`,"aria-hidden":`true`,});app.name.slice(0, 1).toUpperCase(); }
+            }
              { svelteHTML.createElement("span", { "class":`app-text`,});
                { svelteHTML.createElement("strong", {});app.name; }
                { svelteHTML.createElement("small", { "class":`muted`,});host(app.url); }

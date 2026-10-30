@@ -86,6 +86,17 @@ export function homeUrlProblem(url: string | null): string | null {
   return "The website must use https (http is only allowed for localhost).";
 }
 
+/** An app's icon: an absolute https URL, which the CSP's img-src allows. */
+export function iconUrlProblem(url: string | null): string | null {
+  if (url === null) return null;
+  try {
+    if (new URL(url).protocol !== "https:") return "Icon URLs must use https.";
+  } catch {
+    return "That icon URL isn't a valid URL.";
+  }
+  return url.length <= 2048 ? null : "That icon URL is too long.";
+}
+
 /**
  * Redirect URIs are matched exactly, so validation only has to make sure they
  * are absolute, have no fragment, and use https (plain http only for loopback).

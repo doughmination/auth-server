@@ -786,6 +786,11 @@ table.compact td {
   font-weight: 700;
 }
 
+img.app-mark {
+  object-fit: contain;
+  padding: 0.35rem;
+}
+
 .app-text {
   display: flex;
   flex-direction: column;

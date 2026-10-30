@@ -2,6 +2,7 @@
   export interface ClientValues {
     name: string;
     homeUrl: string;
+    iconUrl: string;
     redirectUris: string;
     postLogoutRedirectUris: string;
     allowedGroups: string[];
@@ -25,6 +26,16 @@
   autocomplete="off"
   placeholder="https://app.example.com/"
   hint="Optional. Where the app lives: with one, it's listed on everyone's “Your apps” page (if their groups allow it)."
+/>
+<Field
+  label="Icon"
+  name="iconUrl"
+  type="url"
+  bind:value={values.iconUrl}
+  maxlength={2048}
+  autocomplete="off"
+  placeholder="https://app.example.com/favicon.png"
+  hint="Optional. An https image shown for the app on “Your apps”; without one, its first letter is used."
 />
 <label class="field">
   <span>Redirect URIs</span>

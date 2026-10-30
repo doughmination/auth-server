@@ -21,6 +21,6 @@ apps.get("/api/apps", requireUser, async (c) => {
   return c.json(
     clients
       .filter((cl) => cl.homeUrl && clientAllows(cl, groups))
-      .map((cl) => ({ id: cl.id, name: cl.name, url: cl.homeUrl })),
+      .map((cl) => ({ id: cl.id, name: cl.name, url: cl.homeUrl, iconUrl: cl.iconUrl })),
   );
 });

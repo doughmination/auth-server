@@ -18,7 +18,7 @@
 
   let client = $state<ClientData | null>(null);
   let groups = $state<GroupOption[]>([]);
-  let values = $state<ClientValues>({ name: "", homeUrl: "", redirectUris: "", postLogoutRedirectUris: "", allowedGroups: [] });
+  let values = $state<ClientValues>({ name: "", homeUrl: "", iconUrl: "", redirectUris: "", postLogoutRedirectUris: "", allowedGroups: [] });
   // A secret just created on the previous page (taken, so it's only ever shown
   // once), or one from rotating it here.
   let secret = $state<string | null>(
@@ -41,6 +41,7 @@
     values = {
       name: c.name,
       homeUrl: c.homeUrl ?? "",
+      iconUrl: c.iconUrl ?? "",
       redirectUris: c.redirectUris.join("\n"),
       postLogoutRedirectUris: c.postLogoutRedirectUris.join("\n"),
       allowedGroups: [...c.allowedGroups],

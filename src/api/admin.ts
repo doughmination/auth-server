@@ -14,6 +14,7 @@ import {
   clientIdProblem,
   homeUrlProblem,
   emailProblem,
+  iconUrlProblem,
   groupProblem,
   normaliseUsername,
   pictureProblem,
@@ -370,12 +371,15 @@ async function readClient(c: AppContext, b: Record<string, unknown>): Promise<Cl
   const known = new Set((await listGroups(c.env)).map((g) => g.name));
   const name = cleanText(str(b.name), 100);
   const homeUrl = cleanText(str(b.homeUrl), 2048);
+  const iconUrl = cleanText(str(b.iconUrl), 2048);
   const redirectUris = lines(str(b.redirectUris));
   const postLogoutRedirectUris = lines(str(b.postLogoutRedirectUris));
 
   if (!name) return "Applications need a name.";
   const urlProblem = homeUrlProblem(homeUrl);
   if (urlProblem) return urlProblem;
+  const iconProblem = iconUrlProblem(iconUrl);
+  if (iconProblem) return iconProblem;
   if (redirectUris.length === 0) return "Add at least one redirect URI.";
   if (redirectUris.length + postLogoutRedirectUris.length > 40) return "That's too many URIs.";
   for (const uri of [...redirectUris, ...postLogoutRedirectUris]) {
@@ -385,6 +389,7 @@ async function readClient(c: AppContext, b: Record<string, unknown>): Promise<Cl
   return {
     name,
     homeUrl,
+    iconUrl,
     redirectUris: [...new Set(redirectUris)],
     postLogoutRedirectUris: [...new Set(postLogoutRedirectUris)],
     allowedGroups: strings(b.allowedGroups).filter((g) => known.has(g)),
@@ -397,6 +402,7 @@ function clientJson(c: AppContext, client: Client) {
     id: client.id,
     name: client.name,
     homeUrl: client.homeUrl,
+    iconUrl: client.iconUrl,
     isPublic: client.isPublic,
     redirectUris: client.redirectUris,
     postLogoutRedirectUris: client.postLogoutRedirectUris,

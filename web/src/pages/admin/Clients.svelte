@@ -3,6 +3,7 @@
     id: string;
     name: string;
     homeUrl: string | null;
+    iconUrl: string | null;
     isPublic: boolean;
     redirectUris: string[];
     postLogoutRedirectUris: string[];
@@ -31,7 +32,7 @@
 
   let clients = $state<ClientData[]>([]);
   let groups = $state<GroupOption[]>([]);
-  let values = $state<ClientValues>({ name: "", homeUrl: "", redirectUris: "", postLogoutRedirectUris: "", allowedGroups: [] });
+  let values = $state<ClientValues>({ name: "", homeUrl: "", iconUrl: "", redirectUris: "", postLogoutRedirectUris: "", allowedGroups: [] });
   let type = $state<"confidential" | "public">("confidential");
   let clientId = $state("");
   const load = new Action();

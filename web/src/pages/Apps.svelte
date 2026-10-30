@@ -11,11 +11,15 @@
     id: string;
     name: string;
     url: string;
+    iconUrl: string | null;
   }
 
   let apps = $state<App[] | null>(null);
   const load = new Action();
   load.run(async () => (apps = await api<App[]>("/api/apps")));
+
+  // Icons that didn't load fall back to the app's initial
+  let brokenIcons = $state(new Set<string>());
 
   function host(url: string): string {
     try {
@@ -48,7 +52,17 @@
       {#each apps as app (app.id)}
         <li>
           <a class="app-tile" href={app.url} rel="noopener">
-            <span class="app-mark" aria-hidden="true">{app.name.slice(0, 1).toUpperCase()}</span>
+            {#if app.iconUrl && !brokenIcons.has(app.id)}
+              <img
+                class="app-mark"
+                src={app.iconUrl}
+                alt=""
+                referrerpolicy="no-referrer"
+                onerror={() => (brokenIcons = new Set(brokenIcons).add(app.id))}
+              />
+            {:else}
+              <span class="app-mark" aria-hidden="true">{app.name.slice(0, 1).toUpperCase()}</span>
+            {/if}
             <span class="app-text">
               <strong>{app.name}</strong>
               <small class="muted">{host(app.url)}</small>
