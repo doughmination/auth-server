@@ -7,6 +7,56 @@
     <meta name="robots" content="noindex" />
     <title>Sign in</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+    <!-- Discord component embed: one Container, max 3,000 bytes -->
+    <script id="discord:component-embed" type="application/json">
+      {
+        "component": {
+          "type": 17,
+          "accent_color": 15418782,
+          "components": [
+            {
+              "type": 9,
+              "components": [
+                {
+                  "type": 10,
+                  "content": "## Sign in"
+                },
+                {
+                  "type": 10,
+                  "content": "One account for every Doughmination site."
+                }
+              ],
+              "accessory": {
+                "type": 11,
+                "media": { "url": "https://auth.doughmination.gay/static/favicon.png" }
+              }
+            },
+            { "type": 14 },
+            {
+              "type": 1,
+              "components": [
+                {
+                  "type": 2,
+                  "style": 5,
+                  "label": "Open page",
+                  "url": "https://auth.doughmination.gay/"
+                },
+                {
+                  "type": 2,
+                  "style": 5,
+                  "label": "doughmination.gay",
+                  "url": "https://doughmination.gay/"
+                }
+              ]
+            },
+            {
+              "type": 10,
+              "content": "-# auth.doughmination.gay"
+            }
+          ]
+        }
+      }
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
